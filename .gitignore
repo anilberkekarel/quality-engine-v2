@@ -1,0 +1,47 @@
+# --- secrets / credentials (NEVER commit) ---
+.apikey
+.env
+.env.*
+*.pem
+# any Google / service-account / ADC credential files
+application_default_credentials.json
+service-account*.json
+*-service-account*.json
+*credentials*.json
+*-key.json
+client_secret*.json
+gcloud-*.json
+# Claude Code local machine settings (personal, not shared)
+.claude/settings.local.json
+
+# --- raw data cache (do not commit pulled data) ---
+_cache/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- venv ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- tooling ---
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# NOTE: outputs/ (figures + summary CSVs) ARE committed — they are the
+# whitepaper artifacts. Only _cache/ (raw pulled data) is ignored.

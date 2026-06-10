@@ -273,6 +273,33 @@ class SECEdgarProvider(FinancialProvider):
         except KeyError:
             raise KeyError(f"ticker {ticker!r} not in SEC company_tickers.json")
 
+    def get_financials_for_ciks(self, ticker: str,
+                                ciks: list[int]) -> CompanyFinancials:
+        """Fetch + merge companyfacts for an explicit CIK list (successor
+        first, predecessor entities after) — the registry-driven path."""
+        gaap_list, entities = [], []
+        for c in ciks:
+            try:
+                facts = self._get_json(
+                    config.SEC_COMPANYFACTS_URL.format(cik=c),
+                    f"sec_companyfacts_{ticker.upper()}_CIK{c:010d}.json")
+            except Exception as e:  # e.g. pre-XBRL predecessor with no facts
+                logger.warning("[%s] companyfacts unavailable for CIK %010d "
+                               "(%s) — skipping that entity", ticker, c, e)
+                entities.append(f"UNAVAILABLE (CIK {c:010d})")
+                continue
+            gaap_list.append(facts.get("facts", {}).get("us-gaap", {}))
+            entities.append(f"{facts.get('entityName', '?')} (CIK {c:010d})")
+        if not gaap_list:
+            raise RuntimeError(f"no companyfacts available for {ticker} "
+                               f"(CIKs {ciks})")
+        fin = extract_company(gaap_list, ticker.upper(), ciks[0])
+        fin.notes.extend(f"entity: {e}" for e in entities)
+        logger.info("[%s] %s: %d quarterly observations across %d concepts",
+                    ticker, " + ".join(entities), len(fin.observations),
+                    len(config.CONCEPT_TAG_PRIORITY))
+        return fin
+
     def get_company_financials(self, ticker: str) -> CompanyFinancials:
         cik = self.cik_for(ticker)
         # predecessor entities (e.g. Marvell Technology GROUP pre-2021) are
@@ -280,16 +307,5 @@ class SECEdgarProvider(FinancialProvider):
         spec = next((s for s in config.COMPANIES
                      if s["ticker"] == ticker.upper()), {})
         extra = spec.get("sec_additional_ciks", [])
-        gaap_list, entities = [], []
-        for c in [cik] + [x["cik"] for x in extra]:
-            facts = self._get_json(
-                config.SEC_COMPANYFACTS_URL.format(cik=c),
-                f"sec_companyfacts_{ticker.upper()}_CIK{c:010d}.json")
-            gaap_list.append(facts.get("facts", {}).get("us-gaap", {}))
-            entities.append(f"{facts.get('entityName', '?')} (CIK {c:010d})")
-        fin = extract_company(gaap_list, ticker.upper(), cik)
-        fin.notes.extend(f"entity: {e}" for e in entities)
-        logger.info("[%s] %s: %d quarterly observations across %d concepts",
-                    ticker, " + ".join(entities), len(fin.observations),
-                    len(config.CONCEPT_TAG_PRIORITY))
-        return fin
+        return self.get_financials_for_ciks(
+            ticker, [cik] + [x["cik"] for x in extra])

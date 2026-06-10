@@ -1,0 +1,100 @@
+included,ticker,label,ciks,assignee_prefixes,exclusions,allowlist,is_case_company,delisted,first_fin_quarter,last_fin_quarter,flags,notes
+True,NVDA,NVIDIA,1045810,NVIDIA%,,,True,,2008Q2,2026Q1,M&A: Mellanox 2020 (patent composition),
+True,AMD,AMD,2488,ADVANCED MICRO DEVICES%,,,True,,2009Q2,2026Q1,M&A: Xilinx 2022 (patent composition),
+True,MRVL,Marvell,1835632;1058057,MARVELL%,MARVELLUM%;MARVELLOUS%;MARVELLA%;MARVELLY%;MARVELLE %;MARVELLI %;MARVELL KRISTAN%;MARVELL WILLIAM%;MARVELL TOWNSEND%,,True,,2008Q2,2026Q1,"predecessor CIK merged (Marvell Technology Group) | M&A: Cavium 2018, Inphi 2021 (patent composition)",
+True,MU,Micron,723125,MICRON%,MICRONAS%;MICRONIC%,MICRON TECH%;MICRON TEHNOLOGY%;MICRON TECNOLOGY%;MICRON TCHNOLOGY%;MICRON TEDHNOLOGY%;MICRONG TECHNOLOGY%;MICRONTECHNOLOGY%;MICRONBTECHNOLOGY%;MICRON ELECTRONIC%;MICRON ELETRONICS%;MICRON ELECTONICS%;MICRON SEMICONDUCTOR%;MICRON COMMUNICATION%;MICRON DISPLAY%;MICRON QUANTUM%;MICRONPC%;MICRON PC%;MICRON CUSTOM MANUFACTURING%;MICRON MEMORY%,True,,2008Q4,2026Q1,M&A: Elpida 2013 (patent composition),
+True,INTC,Intel,50863,INTEL CORP%;INTEL IP%;INTEL AMERICAS%;INTEL MOBILE%;INTEL DEUTSCHLAND%,,,False,,2008Q2,2026Q1,,bare INTEL% would catch INTELLECTUAL/INTELLIGENT/INTELLON -> entity-specific prefixes; audit shows what each catches
+True,TXN,Texas Instruments,97476,TEXAS INSTRUMENTS%,,,False,,2008Q2,2026Q1,M&A: National Semiconductor 2011 (patent composition),
+True,AVGO,Broadcom (Avago lineage),1730168;1441634,AVAGO%;BROADCOM INTERNATIONAL%,,,False,,2009Q4,2026Q1,"predecessor CIK merged (Avago Technologies Ltd) | BROADCOM% assignee names pre-2016 belong to BRCM (separate member); post-2018 'BROADCOM INC' filings belong HERE — REVIEW the split in the audit | M&A: LSI 2014, Broadcom Corp 2016 (patent composition)",
+True,NXPI,NXP Semiconductors,1413447,NXP%,,,False,,2018Q3,2026Q1,"M&A: Freescale 2015 (patent composition) | filed 20-F as foreign private issuer until ~2017 -> quarterly XBRL only from 2018 (structural, not a bug)",
+True,ADI,Analog Devices,6281,ANALOG DEVICES%,,,False,,2008Q2,2026Q1,"M&A: Linear 2017, Maxim 2021 (patent composition)",
+True,MCHP,Microchip,827054,MICROCHIP TECH%,,,False,,2008Q2,2026Q1,"M&A: SMSC 2012, Atmel 2016, Microsemi 2018 (composition)",harmonized name is MICROCHIP TECH INC (BQ probe); prefix also avoids GENESIS MICROCHIP and MICROCHIPS INC (different cos)
+True,ON,onsemi,1097864,SEMICONDUCTOR COMPONENTS%;ON SEMICONDUCTOR%,,,False,,2009Q2,2026Q1,patents filed by operating sub SEMICONDUCTOR COMPONENTS INDUSTRIES LLC — both prefixes needed (continuity) | M&A: Fairchild 2016 (patent composition),
+True,SWKS,Skyworks,4127,SKYWORKS%,,,False,,2009Q1,2026Q1,,
+True,QRVO,Qorvo,1604778,QORVO%,,,False,,2013Q2,2026Q1,"formed 2015 from RFMD + TriQuint (both separate delisted members); patent series pre-2015 lives under those names — continuity flag, NOT merged | QRVO companyfacts comparatives reach back to 2013 = RFMD continuation (accounting acquirer) -> 2013Q2-2014Q3 overlaps the RFMD member series (composition note)",
+True,DIOD,Diodes,29002,DIODES INC%,,,False,,2009Q2,2026Q1,,bare DIODES% would catch generic 'DIODES ...' names
+True,CRUS,Cirrus Logic,772406,CIRRUS LOGIC%,,,False,,2010Q2,2026Q1,,
+True,MPWR,Monolithic Power,1280452,MONOLITHIC POWER%,,,False,,2010Q2,2026Q1,,
+True,SYNA,Synaptics,817720,SYNAPTICS%,,,False,,2009Q3,2026Q1,,
+True,WOLF,Wolfspeed (ex-Cree),895419,CREE%;WOLFSPEED%,CREED%,,False,,2009Q3,2026Q1,same CIK renamed Cree->Wolfspeed 2021 | CREELED INC (224 apps) = LED unit divested to SMART Global 2021 — REVIEW whether post-2021 CreeLED filings stay,
+True,MXL,MaxLinear,1288469,MAXLINEAR%,,,False,,2010Q2,2026Q1,,
+True,SLAB,Silicon Labs,1038074,SILICON LAB%,,,False,,2009Q2,2026Q1,,harmonized name is SILICON LAB INC (BQ probe)
+True,ALGM,Allegro MicroSystems,866291,ALLEGRO MICROSYSTEMS%,,,False,,2019Q3,2026Q1,IPO 2020 -> short financial series (patents reach back),
+True,MX,MagnaChip,1325702,MAGNACHIP%,,,False,,2010Q2,2026Q1,,
+True,SMTC,Semtech,88941,SEMTECH%,,,False,,2009Q2,2026Q1,,
+True,MTSI,MACOM,1493594,MACOM%;M A COM%;M/A-COM%,MACOMBER%,,False,,2010Q4,2026Q1,legacy M/A-COM (Tyco-era) entity names match — REVIEW whether pre-2009 M/A-COM heritage counts as MACOM,
+True,LSCC,Lattice,855658,LATTICE SEMICONDUCTOR%,,,False,,2010Q2,2026Q1,,
+True,POWI,Power Integrations,833640,POWER INTEGRATIONS%,,,False,,2009Q2,2026Q1,,
+True,AOSL,Alpha & Omega,1387467,ALPHA & OMEGA SEMICONDUCTOR%;ALPHA AND OMEGA SEMICONDUCTOR%,,,False,,2010Q3,2026Q1,,
+True,BRCM,Broadcom Corp (legacy),1054374,BROADCOM%,BROADCOM INTERNATIONAL%,,False,2016-02 acquired by Avago (renamed Broadcom),2008Q2,2015Q3,BROADCOM INC assignee names post-2018 belong to AVGO — REVIEW the audit split,
+True,XLNX,Xilinx,743988,XILINX%,,,False,2022-02 acquired by AMD,2009Q2,2021Q4,,
+True,ALTR,Altera,768251,ALTERA%,,,False,2015-12 acquired by Intel,2008Q2,2015Q3,,
+True,MXIM,Maxim Integrated,743316,MAXIM INTEGRATED%,,,False,2021-08 acquired by Analog Devices,2009Q3,2021Q2,,bare MAXIM% would catch persons/unrelated MAXIM* companies
+True,CY,Cypress,791915,CYPRESS SEMICONDUCTOR%,,,False,2020-04 acquired by Infineon,2009Q2,2019Q4,M&A: Spansion merged in 2015 (separate member; composition),
+True,CODE,Spansion,1322705,SPANSION%,,,False,2015-03 merged into Cypress,2011Q1,2014Q4,,
+True,FSL,Freescale,1392522,FREESCALE%,,,False,2015-12 acquired by NXP,2010Q2,2015Q3,"predecessor CIK 1272547 (pre-2011-IPO bond filer) has NO companyfacts on EDGAR — pre-IPO quarters unavailable, documented limitation",
+True,MSCC,Microsemi,310568,MICROSEMI%,,,False,2018-05 acquired by Microchip,2009Q2,2018Q1,M&A: PMC-Sierra 2016 (separate member; composition),
+True,ATML,Atmel,872448,ATMEL%,,,False,2016-04 acquired by Microchip,2009Q2,2015Q4,,
+True,FCS,Fairchild,1036960,FAIRCHILD SEMICONDUCTOR%,,,False,2016-09 acquired by onsemi,2009Q2,2016Q2,,
+True,NSM,National Semiconductor,70530,NAT SEMICONDUCTOR%;NATIONAL SEMICONDUCT%,,,False,2011-09 acquired by Texas Instruments,2009Q3,2011Q2,,harmonized name is NAT SEMICONDUCTOR CORP (BQ probe)
+True,LSI,LSI Corp,703360,LSI CORP%;LSI LOGIC%,,,False,2014-05 acquired by Avago,2009Q2,2014Q1,,bare LSI% would catch LSI INDUSTRIES etc.
+True,LLTC,Linear Technology,791907,LINEAR TECH%,,,False,2017-03 acquired by Analog Devices,2009Q3,2016Q4,,harmonized names are LINEAR TECHN INC / LINEAR TECH CORP (BQ probe) — TECH% prefix covers both
+True,MLNX,Mellanox,1356104,MELLANOX%,,,False,2020-04 acquired by NVIDIA,2010Q2,2019Q4,,
+True,IRF,International Rectifier,316793,INT RECTIFIER%;INTERNATIONAL RECTIF%,,,False,2015-01 acquired by Infineon,2009Q3,2014Q3,,harmonized name is INT RECTIFIER CORP (BQ probe)
+True,RFMD,RF Micro Devices,911160,RF MICRO DEVICES%,,,False,2015-01 merged into Qorvo,2009Q2,2014Q3,,
+True,TQNT,TriQuint,913885,TRIQUINT%,,,False,2015-01 merged into Qorvo,2009Q2,2014Q3,,
+True,CAVM,Cavium,1175609,CAVIUM%,,,False,2018-07 acquired by Marvell,2009Q2,2018Q1,,
+True,ATHR,Atheros,1140486,ATHEROS%,,,False,2011-05 acquired by Qualcomm,2009Q2,2011Q1,,
+True,OVTI,OmniVision,1106851,OMNIVISION%,,,False,2016-01 acquired (Chinese consortium),2010Q2,2015Q3,,
+True,IDTI,Integrated Device Technology,703361,INTEGRATED DEVICE TECH%,,,False,2019-03 acquired by Renesas,2009Q2,2018Q4,"same CIK now named 'Renesas Electronics America' — rename, not a new entity",
+True,ISIL,Intersil,1096325,INTERSIL%,,,False,2017-02 acquired by Renesas,2009Q2,2016Q4,,
+True,PMCS,PMC-Sierra,767920,PMC SIERRA%;PMC-SIERRA%,,,False,2016-01 acquired by Microsemi,2009Q2,2015Q3,,
+True,IPHI,Inphi,1160958,INPHI%,,,False,2021-04 acquired by Marvell,2010Q2,2020Q4,,
+False,,"TIGO ENERGY, INC.",1855447,,,,False,,,,excluded: solar_pv,Tigo Energy (its $145B frame fact is an XBRL filing error)
+False,,"FIRST SOLAR, INC.",1274494,,,,False,,,,excluded: solar_pv,First Solar
+False,,"JinkoSolar Holding Co., Ltd.",1481513,,,,False,,,,excluded: foreign_20f,JinkoSolar (also solar)
+False,,Canadian Solar Inc.,1375877,,,,False,,,,excluded: foreign_20f,Canadian Solar (also solar)
+False,,"Suntech Power Holdings Co., Ltd.",1342803,,,,False,,,,excluded: foreign_20f,Suntech (also solar)
+False,,"SOLAREDGE TECHNOLOGIES, INC.",1419612,,,,False,,,,excluded: solar_pv,SolarEdge
+False,,Trina Solar LTD,1382158,,,,False,,,,excluded: foreign_20f,Trina Solar (also solar)
+False,,SUNPOWER CORP,867773,,,,False,,,,excluded: solar_pv,SunPower
+False,,"SUNEDISON, INC.",945436,,,,False,,,,excluded: solar_pv,SunEdison
+False,,"LDK Solar Co., Ltd.",1385424,,,,False,,,,excluded: foreign_20f,LDK Solar (also solar)
+False,,"Hanwha Q CELLS Co., Ltd.",1371541,,,,False,,,,excluded: foreign_20f,Hanwha Q CELLS (also solar)
+False,,YINGLI GREEN ENERGY HOLDING CO LTD,1394029,,,,False,,,,excluded: foreign_20f,Yingli (also solar)
+False,,"Enphase Energy, Inc.",1463101,,,,False,,,,excluded: solar_pv,Enphase
+False,,"Array Technologies, Inc.",1820721,,,,False,,,,excluded: solar_pv,Array Technologies
+False,,"Maxeon Solar Technologies, Ltd.",1796898,,,,False,,,,excluded: foreign_20f,Maxeon (also solar)
+False,,Nextpower Inc.,1852131,,,,False,,,,excluded: solar_pv,Nextpower
+False,,"China Sunergy Co., Ltd.",1396247,,,,False,,,,excluded: foreign_20f,China Sunergy (also solar)
+False,,DAQO NEW ENERGY CORP.,1477641,,,,False,,,,excluded: foreign_20f,Daqo New Energy (also solar)
+False,,GT Advanced Technologies Inc.,1394954,,,,False,,,,excluded: equipment_materials,GT Advanced (PV/sapphire equipment)
+False,,APPLIED MATERIALS INC /DE,6951,,,,False,,,,excluded: equipment_materials,Applied Materials (fab equipment)
+False,,"AMKOR TECHNOLOGY, INC.",1047127,,,,False,,,,excluded: equipment_materials,Amkor (OSAT packaging services)
+False,,"Ultra Clean Holdings, Inc.",1275014,,,,False,,,,excluded: equipment_materials,Ultra Clean (fab subsystems)
+False,,KULICKE &amp; SOFFA INDUSTRIES INC,56978,,,,False,,,,excluded: equipment_materials,Kulicke & Soffa (assembly equipment)
+False,,"ICHOR HOLDINGS, LTD.",1652535,,,,False,,,,excluded: equipment_materials,Ichor (fluid delivery subsystems)
+False,,"CMC Materials, Inc.",1102934,,,,False,,,,excluded: equipment_materials,CMC Materials (CMP slurries)
+False,,PHOTRONICS INC,810136,,,,False,,,,excluded: equipment_materials,Photronics (photomasks)
+False,,FORMFACTOR INC,1039399,,,,False,,,,excluded: equipment_materials,FormFactor (probe cards)
+False,,Verigy Ltd.,1352341,,,,False,,,,excluded: equipment_materials,Verigy (test equipment)
+False,,AEROFLEX HOLDING CORP.,1487990,,,,False,,,,excluded: equipment_materials,Aeroflex (test/microelectronics mix)
+False,,OSI SYSTEMS INC,1039065,,,,False,,,,excluded: equipment_materials,OSI Systems (security/inspection systems)
+False,,SunEdison Semiconductor Ltd,1585854,,,,False,,,,excluded: equipment_materials,SunEdison Semiconductor (silicon wafers)
+False,,"Penguin Solutions, Inc.",1616533,,,,False,,,,excluded: equipment_materials,Penguin Solutions / SMART Global (memory modules)
+False,,IPG PHOTONICS CORP,1111928,,,,False,,,,excluded: optical_modules,IPG Photonics (fiber lasers)
+False,,FINISAR CORP,1094739,,,,False,,,,excluded: optical_modules,Finisar
+False,,VIAVI SOLUTIONS INC.,912093,,,,False,,,,excluded: optical_modules,Viavi (test + optical)
+False,,"OCLARO, INC.",1110647,,,,False,,,,excluded: optical_modules,Oclaro
+False,,"Acacia Communications, Inc.",1651235,,,,False,,,,excluded: optical_modules,Acacia Communications
+False,,STMicroelectronics N.V.,932787,,,,False,,,,excluded: foreign_20f,STMicroelectronics
+False,,TOWER SEMICONDUCTOR LTD,928876,,,,False,,,,excluded: foreign_20f,Tower Semiconductor
+False,,SEMICONDUCTOR MANUFACTURING INTERNATIONAL CORP,1267482,,,,False,,,,excluded: foreign_20f,SMIC
+False,,Silicon Motion Technology CORP,1329394,,,,False,,,,excluded: foreign_20f,Silicon Motion
+False,,"Himax Technologies, Inc.",1342338,,,,False,,,,excluded: foreign_20f,Himax
+False,,SPREADTRUM COMMUNICATIONS INC,1287950,,,,False,,,,excluded: foreign_20f,Spreadtrum
+False,,ARM HOLDINGS PLC /UK,1973239,,,,False,,,,excluded: foreign_20f,ARM Holdings
+False,,Broadcom Pte. Ltd.,1649338,,,,False,,,,excluded: duplicate_coissuer,Broadcom Pte — AVGO lineage co-registrant
+False,,Broadcom Cayman L.P.,1649345,,,,False,,,,excluded: duplicate_coissuer,Broadcom Cayman LP — AVGO lineage co-registrant
+False,,FREESCALE SEMICONDUCTOR INC,1272547,,,,False,,,,excluded: duplicate_coissuer,Freescale Inc — merged into FSL member as predecessor CIK
+False,,"Qnity Electronics, Inc.",2058873,,,,False,,,,excluded: insufficient_depth,"Qnity Electronics (2025 spin-off, <8 quarters)"

@@ -152,6 +152,35 @@ Step 4 artifacts (committed, in `outputs/`):
 - `fig6_state_profiles.png` — joint-model state-conditional channel means
   (4 companies x 2 states x 3 channels): is "high" the same thing everywhere?
 
+Step 5a artifacts (committed, in `outputs/`):
+- `universe_registry.csv` — the ~50-company universe, single source of truth:
+  CIKs (predecessors included), assignee prefixes, exclusions, delist dates,
+  flags; screen-excluded companies recorded with category + reason.
+- `universe_assignee_audit.csv` — semi-automatic assignee audit; every
+  matched name with >=20 applications is tagged REVIEW (researcher decides;
+  the pipeline never auto-excludes beyond explicit registry rules).
+- `universe_data_quality.csv` — per company: patent totals, first/last
+  quarters, financial depth, missing quarters, restatements, flags.
+- `ma_events.csv` — manually curated, non-exhaustive M&A annotation layer
+  (NOT a model input).
+- `channels_universe.csv` — the universe-wide quarterly channel grid
+  (the four-case `channels.csv` is untouched).
+
+### Universe scaling (Step 5a — plumbing only, no model)
+
+Selection rule (full text in `src/qvm/universe_registry.py`): SIC-3674 10-K
+filers from the EDGAR browse (delisted INCLUDED — Xilinx, Altera, Inphi,
+Cypress, Maxim, Freescale, ... enter until their delisting; pre-2009
+delistings out of scope, documented), peak annual revenue >= $500M in any
+2009-2023 XBRL revenue frame, semiconductor DEVICE companies only
+(solar/equipment/optical/20-F-foreign screened out with recorded reasons),
+>= 8 quarterly observations. Result: 51 members (24 delisted). Known rule
+consequence: Qualcomm is SIC 3663, hence outside. Patents come from ONE
+consolidated BigQuery query (~12 GiB scan, same as 4 companies — scan cost
+is column-based); harmonized-name abbreviations (NAT SEMICONDUCTOR, INT
+RECTIFIER, MICROCHIP TECH, SILICON LAB, LINEAR TECHN) were probed and fixed
+in the registry. `run_universe.py` is the entry point.
+
 ### Joint multi-channel HMM (Step 4)
 
 One latent state generates all three channels, conditionally independently:
@@ -225,6 +254,7 @@ req/s per SEC policy). Methodology, all enforced in code and logged per company:
 ```
 src/qvm/
   config.py                       # source ids, fields, companies, tags, dates (single source)
+  universe_registry.py            # Step 5a: ~50-company universe, selection rule + curation
   data/
     base.py                       # PatentRecord + CompanyPatents + PatentProvider (ABC)
     bigquery_provider.py          # ACTIVE patents: BigQuery patents-public-data
@@ -244,7 +274,8 @@ src/qvm/
     fusion_hmm.py                 # joint multi-channel HMM (NB + Gaussians, missing-aware)
   viz/
     plots.py                      # whitepaper-grade figures
-run.py                            # orchestration + CSV/PNG output + console report
+run.py                            # 4-case orchestration + CSV/PNG output + console report
+run_universe.py                   # Step 5a universe plumbing (registry/patents/financials/quality)
 tests/test_pipeline_synthetic.py  # network-free patent-pipeline validation
 tests/test_financials_synthetic.py# network-free financial-extraction validation
 tests/test_hmm_synthetic.py       # brute-force FB validation + EM parameter recovery
@@ -322,10 +353,19 @@ harmonized names were folded in.
       NOT move; decisiveness and end-state did — see Step 4 section)
 - [x] Fig5 ablation overlay + Fig6 state-profile heatmap
 
+**Done (Step 5a, this checkpoint — plumbing only):**
+- [x] 51-member universe registry (SIC 3674 + documented screens, 24 delisted
+      members included; excluded screen-survivors recorded with reasons)
+- [x] One consolidated BigQuery pull + vectorized collapse + semi-automatic
+      assignee audit (147 REVIEW names listed for researcher decision)
+- [x] SEC companyfacts loop for all members (predecessor CIKs, delisted
+      series end naturally), data-quality table, `channels_universe.csv`
+- [x] M&A annotation layer (`ma_events.csv`, curated, non-exhaustive)
+
 **Planned (not started):**
-- [ ] Expanding-window re-estimation = true out-of-sample filtered probs (Step 5)
-- [ ] Channel weighting / robust emissions (NB dominance is a finding to address)
-- [ ] Wider universe + partial pooling / hierarchy (Step 5)
+- [ ] Step 5b: predictive scoreboard (expanding-window re-estimation, true
+      out-of-sample) + calibrated channel weighting (the Step-4 finding)
+- [ ] Partial pooling / hierarchy over the universe
 - [ ] Point-in-time backtest honouring the measured lags + `knowable_at` dates (c)
 - [ ] Write-up / working paper
 

@@ -1,0 +1,52 @@
+ticker,label,patent_applications,patent_first_quarter,patent_last_quarter,fin_first_quarter,fin_last_quarter,fin_quarters,fin_missing_internal_quarters,restated_observations,delisted,flags
+NVDA,NVIDIA,8523,1995Q2,2025Q4,2008Q2,2026Q1,71,1,24,,M&A: Mellanox 2020 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)
+AMD,AMD,14688,1973Q1,2025Q4,2009Q2,2026Q1,67,1,10,,M&A: Xilinx 2022 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)
+MRVL,Marvell,9409,1995Q2,2025Q4,2008Q2,2026Q1,71,1,45,,"predecessor CIK merged (Marvell Technology Group) | M&A: Cavium 2018, Inphi 2021 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)"
+MU,Micron,45185,1981Q4,2025Q4,2008Q4,2026Q1,67,3,7,,M&A: Elpida 2013 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)
+INTC,Intel,68364,1969Q4,2025Q4,2008Q2,2026Q1,71,1,15,,fin series starts >2y after patents (XBRL start or late IPO)
+TXN,Texas Instruments,36775,1947Q4,2025Q4,2008Q2,2026Q1,71,1,15,,M&A: National Semiconductor 2011 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)
+AVGO,Broadcom (Avago lineage),4612,1999Q4,2025Q4,2009Q4,2026Q1,62,4,1,,"predecessor CIK merged (Avago Technologies Ltd) | BROADCOM% assignee names pre-2016 belong to BRCM (separate member); post-2018 'BROADCOM INC' filings belong HERE — REVIEW the split in the audit | M&A: LSI 2014, Broadcom Corp 2016 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)"
+NXPI,NXP Semiconductors,9945,1999Q2,2025Q4,2018Q3,2026Q1,30,1,0,,"M&A: Freescale 2015 (patent composition) | filed 20-F as foreign private issuer until ~2017 -> quarterly XBRL only from 2018 (structural, not a bug) | fin series starts >2y after patents (XBRL start or late IPO)"
+ADI,Analog Devices,5700,1967Q2,2025Q4,2008Q2,2026Q1,73,1,13,,"M&A: Linear 2017, Maxim 2021 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)"
+MCHP,Microchip,1969,1987Q2,2025Q4,2008Q2,2026Q1,72,0,40,,"M&A: SMSC 2012, Atmel 2016, Microsemi 2018 (composition) | fin series starts >2y after patents (XBRL start or late IPO)"
+ON,onsemi,4454,1994Q3,2025Q4,2009Q2,2026Q1,67,1,35,,patents filed by operating sub SEMICONDUCTOR COMPONENTS INDUSTRIES LLC — both prefixes needed (continuity) | M&A: Fairchild 2016 (patent composition) | fin series starts >2y after patents (XBRL start or late IPO)
+SWKS,Skyworks,3965,1998Q1,2025Q4,2009Q1,2026Q1,68,1,26,,fin series starts >2y after patents (XBRL start or late IPO)
+QRVO,Qorvo,1577,2009Q3,2025Q4,2013Q2,2026Q1,52,0,0,,"formed 2015 from RFMD + TriQuint (both separate delisted members); patent series pre-2015 lives under those names — continuity flag, NOT merged | QRVO companyfacts comparatives reach back to 2013 = RFMD continuation (accounting acquirer) -> 2013Q2-2014Q3 overlaps the RFMD member series (composition note) | fin series starts >2y after patents (XBRL start or late IPO)"
+DIOD,Diodes,198,1960Q4,2025Q4,2009Q2,2026Q1,67,1,5,,fin series starts >2y after patents (XBRL start or late IPO)
+CRUS,Cirrus Logic,3048,1987Q3,2025Q4,2010Q2,2026Q1,64,0,0,,fin series starts >2y after patents (XBRL start or late IPO)
+MPWR,Monolithic Power,477,1998Q2,2025Q4,2010Q2,2026Q1,63,1,0,,fin series starts >2y after patents (XBRL start or late IPO)
+SYNA,Synaptics,1736,1986Q2,2025Q4,2009Q3,2026Q1,67,0,23,,fin series starts >2y after patents (XBRL start or late IPO)
+WOLF,Wolfspeed (ex-Cree),3868,1899Q3,2025Q4,2009Q3,2026Q1,67,0,92,,same CIK renamed Cree->Wolfspeed 2021 | CREELED INC (224 apps) = LED unit divested to SMART Global 2021 — REVIEW whether post-2021 CreeLED filings stay | fin series starts >2y after patents (XBRL start or late IPO)
+MXL,MaxLinear,1010,2005Q2,2025Q4,2010Q2,2026Q1,63,1,10,,fin series starts >2y after patents (XBRL start or late IPO)
+SLAB,Silicon Labs,2057,1997Q2,2025Q4,2009Q2,2026Q1,67,1,24,,fin series starts >2y after patents (XBRL start or late IPO)
+ALGM,Allegro MicroSystems,1138,1987Q2,2025Q3,2019Q3,2026Q1,26,1,6,,IPO 2020 -> short financial series (patents reach back) | fin series starts >2y after patents (XBRL start or late IPO)
+MX,MagnaChip,620,2000Q3,2025Q2,2010Q2,2026Q1,63,1,68,,fin series starts >2y after patents (XBRL start or late IPO)
+SMTC,Semtech,326,1969Q1,2025Q4,2009Q2,2026Q1,68,1,21,,fin series starts >2y after patents (XBRL start or late IPO)
+MTSI,MACOM,597,1910Q2,2025Q4,2010Q4,2026Q1,62,0,45,,legacy M/A-COM (Tyco-era) entity names match — REVIEW whether pre-2009 M/A-COM heritage counts as MACOM | fin series starts >2y after patents (XBRL start or late IPO)
+LSCC,Lattice,809,1985Q1,2025Q3,2010Q2,2026Q1,63,1,9,,fin series starts >2y after patents (XBRL start or late IPO)
+POWI,Power Integrations,1122,1987Q2,2025Q4,2009Q2,2026Q1,67,1,19,,fin series starts >2y after patents (XBRL start or late IPO)
+AOSL,Alpha & Omega,1011,1998Q3,2025Q3,2010Q3,2026Q1,63,0,6,,fin series starts >2y after patents (XBRL start or late IPO)
+BRCM,Broadcom Corp (legacy),13415,1979Q4,2022Q3,2008Q2,2015Q3,29,1,21,2016-02 acquired by Avago (renamed Broadcom),BROADCOM INC assignee names post-2018 belong to AVGO — REVIEW the audit split | fin series starts >2y after patents (XBRL start or late IPO)
+XLNX,Xilinx,5330,1984Q3,2025Q4,2009Q2,2021Q4,51,0,17,2022-02 acquired by AMD,fin series starts >2y after patents (XBRL start or late IPO)
+ALTR,Altera,4581,1982Q3,2025Q4,2008Q2,2015Q3,29,1,0,2015-12 acquired by Intel,fin series starts >2y after patents (XBRL start or late IPO)
+MXIM,Maxim Integrated,1414,1985Q4,2025Q1,2009Q3,2021Q2,48,0,12,2021-08 acquired by Analog Devices,fin series starts >2y after patents (XBRL start or late IPO)
+CY,Cypress,4027,1984Q4,2025Q3,2009Q2,2019Q4,42,1,12,2020-04 acquired by Infineon,M&A: Spansion merged in 2015 (separate member; composition) | fin series starts >2y after patents (XBRL start or late IPO)
+CODE,Spansion,1294,2000Q2,2015Q1,2011Q1,2014Q4,17,0,0,2015-03 merged into Cypress,fin series starts >2y after patents (XBRL start or late IPO)
+FSL,Freescale,6924,1997Q4,2017Q3,2010Q2,2015Q3,21,1,0,2015-12 acquired by NXP,"predecessor CIK 1272547 (pre-2011-IPO bond filer) has NO companyfacts on EDGAR — pre-IPO quarters unavailable, documented limitation | fin series starts >2y after patents (XBRL start or late IPO)"
+MSCC,Microsemi,675,1991Q2,2025Q3,2009Q2,2018Q1,35,1,34,2018-05 acquired by Microchip,M&A: PMC-Sierra 2016 (separate member; composition) | fin series starts >2y after patents (XBRL start or late IPO)
+ATML,Atmel,2012,1987Q2,2025Q1,2009Q2,2015Q4,26,1,0,2016-04 acquired by Microchip,fin series starts >2y after patents (XBRL start or late IPO)
+FCS,Fairchild,1390,1959Q2,2021Q2,2009Q2,2016Q2,28,1,0,2016-09 acquired by onsemi,fin series starts >2y after patents (XBRL start or late IPO)
+NSM,National Semiconductor,4979,1962Q3,2019Q2,2009Q3,2011Q2,8,0,0,2011-09 acquired by Texas Instruments,fin series starts >2y after patents (XBRL start or late IPO)
+LSI,LSI Corp,7181,1982Q3,2015Q2,2009Q2,2014Q1,19,1,12,2014-05 acquired by Avago,fin series starts >2y after patents (XBRL start or late IPO)
+LLTC,Linear Technology,770,1976Q2,2021Q2,2009Q3,2016Q4,30,0,16,2017-03 acquired by Analog Devices,fin series starts >2y after patents (XBRL start or late IPO)
+MLNX,Mellanox,1543,2000Q2,2025Q4,2010Q2,2019Q4,38,1,29,2020-04 acquired by NVIDIA,fin series starts >2y after patents (XBRL start or late IPO)
+IRF,International Rectifier,1666,1951Q2,2015Q3,2009Q3,2014Q3,21,0,0,2015-01 acquired by Infineon,fin series starts >2y after patents (XBRL start or late IPO)
+RFMD,RF Micro Devices,875,1995Q1,2016Q2,2009Q2,2014Q3,22,0,0,2015-01 merged into Qorvo,fin series starts >2y after patents (XBRL start or late IPO)
+TQNT,TriQuint,373,1984Q4,2018Q3,2009Q2,2014Q3,21,1,0,2015-01 merged into Qorvo,fin series starts >2y after patents (XBRL start or late IPO)
+CAVM,Cavium,595,2001Q3,2020Q4,2009Q2,2018Q1,35,1,2,2018-07 acquired by Marvell,fin series starts >2y after patents (XBRL start or late IPO)
+ATHR,Atheros,275,1999Q3,2025Q1,2009Q2,2011Q1,7,1,0,2011-05 acquired by Qualcomm,fin series starts >2y after patents (XBRL start or late IPO)
+OVTI,OmniVision,1652,1992Q3,2025Q4,2010Q2,2015Q3,22,0,0,2016-01 acquired (Chinese consortium),fin series starts >2y after patents (XBRL start or late IPO)
+IDTI,Integrated Device Technology,1329,1986Q3,2023Q2,2009Q2,2018Q4,39,1,43,2019-03 acquired by Renesas,"same CIK now named 'Renesas Electronics America' — rename, not a new entity | fin series starts >2y after patents (XBRL start or late IPO)"
+ISIL,Intersil,1038,1970Q4,2015Q4,2009Q2,2016Q4,30,1,8,2017-02 acquired by Renesas,fin series starts >2y after patents (XBRL start or late IPO)
+PMCS,PMC-Sierra,539,1991Q3,2016Q1,2009Q2,2015Q3,25,2,20,2016-01 acquired by Microsemi,fin series starts >2y after patents (XBRL start or late IPO)
+IPHI,Inphi,610,2001Q4,2021Q2,2010Q2,2020Q4,42,1,26,2021-04 acquired by Marvell,fin series starts >2y after patents (XBRL start or late IPO)

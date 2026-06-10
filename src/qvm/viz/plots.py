@@ -7,6 +7,11 @@ Figures
          echoing V1's normalization step).
   Fig2   NVIDIA's three date series (filing / publication / grant) overlaid,
          to SEE the inter-date lag.
+  Fig3   the two-sensor EYE TEST (pre-model): per company, quarterly patent
+         filings vs gross margin vs revenue YoY growth on one time axis —
+         do the channels break together (NVDA) or decouple (MU control)?
+  Fig4   (per company) NB-HMM regimes: counts with smoothed high-regime
+         shading + filtered (causal) probability lower panel.
 
 The trailing INCOMPLETE_TRAILING_YEARS of the filing series are drawn dashed
 and shaded ("incomplete: filings not yet published") — a data artifact, not a
@@ -132,6 +137,123 @@ def plot_filing_companies(baseline, out_dir, company_order=None):
         plt.close(fig)
         paths.append(path)
     return tuple(paths)
+
+
+def plot_channels_eyetest(channels, out_dir, company_order=None):
+    """Fig3: per-company panel — patent filings (left axis) vs gross margin &
+    revenue YoY growth (right axis), quarterly, shared time axis.
+
+    Financial values are AS-FILED (point-in-time); the incomplete patent tail
+    is shaded and dashed exactly as in Fig1. Returns the PNG path.
+    """
+    import pandas as pd
+
+    ch = channels.copy()
+    ch["t"] = pd.to_datetime(ch["period_start"])
+    tickers = company_order or list(dict.fromkeys(ch["ticker"]))
+    fig, axes = plt.subplots(len(tickers), 1, figsize=(11, 3.0 * len(tickers)),
+                             sharex=True)
+    for ax, ticker in zip(axes, tickers):
+        g = ch[ch["ticker"] == ticker].sort_values("t")
+        label = g["label"].iloc[0]
+        color = _COMPANY_COLOR.get(ticker, "#333")
+        complete = g[~g["patent_incomplete"]]
+        tail = g[g["patent_incomplete"]]
+        ax.plot(complete["t"], complete["patent_filing_count"], color=color,
+                lw=1.8, label="Patent filings / quarter")
+        if not tail.empty:
+            bridge = pd.concat([complete.tail(1), tail])
+            ax.plot(bridge["t"], bridge["patent_filing_count"], color=color,
+                    lw=1.4, ls="--", alpha=0.75)
+            ax.axvspan(tail["t"].iloc[0], g["t"].iloc[-1],
+                       color="grey", alpha=0.12)
+        ax.set_ylabel("Filings / quarter", fontsize=8.5)
+        ax.set_title(f"{label} ({ticker})", fontsize=10, loc="left")
+
+        axr = ax.twinx()
+        axr.grid(False)
+        axr.spines.top.set_visible(False)
+        fin = g[g["gross_margin"].notna()]
+        axr.plot(fin["t"], 100 * fin["gross_margin"], color="#ff7f0e",
+                 lw=1.5, label="Gross margin (as filed)")
+        yoy = g[g["revenue_yoy_growth"].notna()]
+        axr.plot(yoy["t"], 100 * yoy["revenue_yoy_growth"], color="#9467bd",
+                 lw=1.1, alpha=0.85, label="Revenue YoY growth")
+        axr.axhline(0, color="#999", lw=0.7, ls=":")
+        axr.set_ylabel("%", fontsize=8.5)
+        if ax is axes[0]:
+            lines = ax.get_lines()[:1] + axr.get_lines()[:2]
+            ax.legend(lines, [l.get_label() for l in lines], frameon=False,
+                      fontsize=8, loc="upper left", ncol=3)
+    axes[-1].set_xlabel("Calendar quarter")
+    fig.suptitle("Two-sensor eye test — patent rhythm vs financial channel "
+                 "(pre-model, raw aligned series)", fontweight="bold", y=0.995)
+    fig.text(0.01, -0.01, _CAPTION + " Financials: SEC EDGAR XBRL, as-filed "
+             "values, calendar-quarter aligned by period end. Shaded: "
+             "incomplete patent tail (18-month publication secrecy).",
+             fontsize=7, style="italic", color="#555")
+    fig.tight_layout(rect=(0, 0, 1, 0.985))
+    path = os.path.join(out_dir, "fig3_channels_eyetest.png")
+    _ensure_dir(path)
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def plot_regimes(res: dict, out_dir: str) -> str:
+    """Fig4 (one per company): quarterly counts with smoothed high-regime
+    periods shaded, plus the FILTERED (causal) probability in a lower panel.
+
+    `res` is one element of qvm.analysis.regimes.analyze_all output.
+    Returns the PNG path.
+    """
+    import numpy as np
+
+    quarters, y, fit = res["quarters"], res["y"], res["nb2"]
+    t = quarters.to_timestamp()
+    color = _COMPANY_COLOR.get(res["ticker"], "#333")
+
+    fig, (ax, axp) = plt.subplots(
+        2, 1, figsize=(11, 6.5), sharex=True,
+        gridspec_kw={"height_ratios": [2.4, 1.0], "hspace": 0.08})
+    # shade smoothed high-regime periods (retrospective view)
+    in_high = fit.smoothed[:, 1] >= 0.5
+    start = None
+    for i in range(len(in_high) + 1):
+        if i < len(in_high) and in_high[i] and start is None:
+            start = i
+        elif (i == len(in_high) or not in_high[i]) and start is not None:
+            ax.axvspan(t[start], t[min(i, len(t) - 1)], color=color, alpha=0.14)
+            start = None
+    ax.plot(t, y, color=color, lw=1.7, marker="o", ms=2.6,
+            label="Patent filings / quarter (complete only)")
+    mu0, mu1 = fit.mus
+    ax.axhline(mu0, color="#888", lw=0.9, ls=":", label=f"$\\mu_0$={mu0:.0f} (low)")
+    ax.axhline(mu1, color="#444", lw=0.9, ls="--", label=f"$\\mu_1$={mu1:.0f} (high)")
+    ax.set_ylabel("Filings / quarter")
+    ax.set_title(f"{res['label']} ({res['ticker']}) — NB-HMM regimes "
+                 f"(shaded: smoothed P(high)$\\geq$0.5)")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+
+    axp.plot(t, fit.filtered[:, 1], color="#d62728", lw=1.5,
+             label="Filtered P(high | data up to t) — causal")
+    axp.plot(t, fit.smoothed[:, 1], color="#555", lw=1.0, ls="--", alpha=0.8,
+             label="Smoothed P(high | all data) — retrospective")
+    axp.axhline(0.5, color="#999", lw=0.8, ls=":")
+    axp.set_ylim(-0.04, 1.04)
+    axp.set_ylabel("P(high regime)")
+    axp.set_xlabel("Quarter")
+    axp.legend(frameon=False, fontsize=8, loc="center left")
+
+    fig.text(0.01, -0.02, _CAPTION + f" Model: 2-state NB-HMM, {res['note']}. "
+             "Caveat: parameters are full-sample — filtered probs are causal "
+             "in observations only (true OOS = expanding window, Step 5).",
+             fontsize=7, style="italic", color="#555")
+    path = os.path.join(out_dir, f"fig4_regimes_{res['ticker']}.png")
+    _ensure_dir(path)
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
 
 
 def plot_three_dates(baseline, out_dir, ticker="NVDA"):

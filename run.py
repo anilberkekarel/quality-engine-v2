@@ -42,6 +42,9 @@ CHANNELS_CSV = os.path.join(config.OUTPUT_DIR, "channels.csv")
 FIN_DETAIL_CSV = os.path.join(config.OUTPUT_DIR, "financials_quarterly.csv")
 Q4_SANITY_CSV = os.path.join(config.OUTPUT_DIR, "q4_derivation_sanity.csv")
 YF_CROSSCHECK_CSV = os.path.join(config.OUTPUT_DIR, "yfinance_crosscheck.csv")
+REGIME_PROBS_CSV = os.path.join(config.OUTPUT_DIR, "regime_probabilities.csv")
+HMM_PARAMS_CSV = os.path.join(config.OUTPUT_DIR, "hmm_parameters.csv")
+REGIME_SWITCHES_CSV = os.path.join(config.OUTPUT_DIR, "regime_switches.csv")
 
 _RAW_FIELDS = ["ticker", "label", "name_like", "patent_id", "assignee_id",
                "assignee_org", "filing_date", "publication_date", "grant_date",
@@ -214,7 +217,47 @@ def main():
                     FIN_DETAIL_CSV, Q4_SANITY_CSV)
         _print_step2_summary(financials, ch, sanity)
         run_yfinance_crosscheck(financials)
+        fig3 = plots.plot_channels_eyetest(ch, config.OUTPUT_DIR,
+                                           company_order=order)
+        logger.info("wrote figure -> %s", fig3)
+
+    # ---- STEP 3: patent-only NB-HMM baseline (single-channel regimes) ----
+    run_regimes(companies)
     return 0
+
+
+def run_regimes(companies) -> None:
+    from qvm.analysis import regimes
+    results = regimes.analyze_all(companies)
+
+    regimes.probabilities_table(results).to_csv(REGIME_PROBS_CSV, index=False)
+    params = regimes.parameters_table(results)
+    params.to_csv(HMM_PARAMS_CSV, index=False)
+    switches = regimes.switches_table(results)
+    switches.to_csv(REGIME_SWITCHES_CSV, index=False)
+    logger.info("wrote regime outputs -> %s | %s | %s",
+                REGIME_PROBS_CSV, HMM_PARAMS_CSV, REGIME_SWITCHES_CSV)
+    for res in results:
+        logger.info("wrote figure -> %s", plots.plot_regimes(res, config.OUTPUT_DIR))
+
+    agree = regimes.implementation_agreement(results)
+    print("\n" + "=" * 72)
+    print("QVM-V2 STEP 3 — PATENT-ONLY NB-HMM BASELINE (single-channel regimes)")
+    print("=" * 72)
+    print(f"\nNOTE: {regimes.POINT_IN_TIME_CAVEAT}")
+    print("\n--- parameters (2-state NB; states ordered low->high) ---")
+    nb2 = params[params["model"] == "nb2"]
+    print(nb2[["ticker", "mus", "dispersion_r", "expected_durations_q",
+               "restarts_at_best_logl", "restart_logl_spread",
+               "em_converged"]].to_string(index=False))
+    print("\n--- model comparison (BIC; negative delta favours first) ---")
+    print(agree.to_string(index=False))
+    print("\n--- persistent filtered switches (>=0.5 for >=2 quarters) ---")
+    print(switches[["ticker", "quarter", "direction",
+                    "p_high_at_switch"]].to_string(index=False))
+    for res in results:
+        print(f"  [{res['ticker']}] {res['note']}")
+    print("=" * 72)
 
 
 def run_financials() -> dict:

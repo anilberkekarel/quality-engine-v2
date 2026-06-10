@@ -319,6 +319,22 @@ Q4_MAX_RATIO_TO_SIBLINGS = 3.0  # |Q4| vs max(|Q1..Q3|)
 # Channel-grid scope (Step 2 alignment table for the fusion model).
 CHANNELS_START_QUARTER = "2009Q1"
 
+# ===========================================================================
+# STEP 3: patent-only NB-HMM baseline (single-channel regime model)
+# ===========================================================================
+# Each company is fit SEPARATELY (4 independent HMMs): with only four firms,
+# pooling/hierarchy would let one giant (Micron) dominate shared parameters;
+# partial pooling is deferred to Step 5's wider universe.
+HMM_START_QUARTER = "2005Q1"
+# Quarters flagged patent_incomplete (trailing ~2 years, 18-month publication
+# secrecy) NEVER enter the model: the artificial decline would fabricate a
+# "low regime". The series is cut at the last complete quarter and the cut is
+# logged and stamped into every output.
+HMM_N_RESTARTS = 20      # EM restarts; best logL kept, spread reported
+HMM_MAX_ITER = 500
+HMM_TOL = 1e-6           # relative logL change convergence threshold
+HMM_SWITCH_MIN_PERSIST = 2  # quarters filtered P(high) must hold >=0.5 to count
+
 # FMP (Financial Modeling Prep) — future premium source; skeleton only.
 # Key goes in .env (gitignored) as FMP_API_KEY=...
 FMP_API_KEY_ENV_VAR = "FMP_API_KEY"

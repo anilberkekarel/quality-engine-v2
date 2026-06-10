@@ -26,10 +26,12 @@ questions:
 > look-ahead bias affect the comparison?
 
 **Implemented so far: STEP 1** (patent data layer + raw visualization + date-lag
-measurement) and **STEP 2** (assignee-match cleanup of the Micron control case,
+measurement), **STEP 2** (assignee-match cleanup of the Micron control case,
 SEC EDGAR XBRL financial channel with point-in-time `filed` dates, and the
-quarterly channel-alignment grid `outputs/channels.csv` that the fusion model
-will consume). The latent-state model itself is Step 3-4.
+quarterly channel-alignment grid `outputs/channels.csv`), and **STEP 3** (the
+patent-only 2-state Negative-Binomial HMM baseline — single-channel regime
+detection, written from scratch with log-space EM and validated against
+brute-force inference). The joint fusion model is Step 4.
 
 ---
 
@@ -115,6 +117,37 @@ Step 2 artifacts (committed, in `outputs/`):
   deviation between derived and directly-filed Q4 facts where both exist.
 - `yfinance_crosscheck.csv` — recent quarters cross-validated against Yahoo
   Finance (sanity only; yfinance has no filed dates and is never a source).
+- `fig3_channels_eyetest.png` — pre-model eye test: patent rhythm vs gross
+  margin vs revenue YoY per company on one time axis.
+
+Step 3 artifacts (committed, in `outputs/`):
+- `regime_probabilities.csv` — per (company, quarter): filtered P(high|y_1:t)
+  (causal), smoothed P(high|y_1:T) (retrospective), Viterbi state.
+- `hmm_parameters.csv` — per company and model (NB-2/NB-3/Poisson-2): state
+  means, dispersion, transition matrix, expected regime durations, logL, BIC,
+  restart stability, the data-cut note.
+- `regime_switches.csv` — dates where filtered P(high) crossed 0.5 and HELD
+  for ≥2 quarters (blips don't count).
+- `fig4_regimes_<TICKER>.png` — counts with smoothed high-regime shading +
+  filtered probability panel.
+
+### Patent-only NB-HMM baseline (Step 3)
+
+2-state HMM with Negative-Binomial emissions (counts are overdispersed —
+Poisson loses by 204-1092 BIC points per company), state-dependent means,
+shared dispersion, fit by from-scratch EM: log-space forward-backward
+(validated against brute-force path enumeration in tests), 20 random restarts,
+states reordered by mean after fitting (label-switching guard). The
+incomplete patent tail (18-month secrecy) is cut before modeling — it would
+fabricate a fake low regime. Each company is fit separately; pooling is
+deferred to Step 5's wider universe. Cross-checks: our Poisson-HMM and
+hmmlearn's GaussianHMM on log(1+count) agree on regime paths (77-100%
+Viterbi agreement). **Honesty caveat (stamped in outputs):** filtered
+probabilities are causal in observations, but parameters are estimated on the
+full sample — true out-of-sample requires expanding-window re-estimation
+(Step 5). Expected finding, confirmed: the single-channel model finds a high
+regime in the Micron control too (2017Q3→2023Q1) — evidence that one channel
+cannot separate structural from cyclical, which is the motivation for fusion.
 
 ### Financial channel: SEC EDGAR XBRL (Step 2)
 
@@ -160,11 +193,15 @@ src/qvm/
     timeseries.py                 # NAIVE BASELINE yearly+quarterly counts (isolated)
     lag.py                        # filing/publication/grant lag measurement
     channels.py                   # channel-alignment grid (fusion model input)
+    regimes.py                    # Step 3 orchestration: data cut, model suite, switches
+  models/
+    nb_hmm.py                     # from-scratch NB/Poisson HMM (log-space EM)
   viz/
     plots.py                      # whitepaper-grade figures
 run.py                            # orchestration + CSV/PNG output + console report
 tests/test_pipeline_synthetic.py  # network-free patent-pipeline validation
 tests/test_financials_synthetic.py# network-free financial-extraction validation
+tests/test_hmm_synthetic.py       # brute-force FB validation + EM parameter recovery
 ```
 
 ### Study universe & assignee matching
@@ -220,10 +257,18 @@ harmonized names were folded in.
       aligned by XBRL period end — the fusion model's input format)
 - [x] yfinance cross-validation of recent quarters; FMP provider skeleton
 
+**Done (Step 3, this checkpoint):**
+- [x] From-scratch NB-HMM (log-space EM, 20 restarts, label guard), validated
+      against brute-force inference + synthetic parameter recovery
+- [x] Filtered (causal) AND smoothed regime probabilities + Viterbi paths,
+      persistent-switch dating, BIC model selection (2 vs 3 states, NB vs
+      Poisson), GaussianHMM cross-check
+- [x] Fig3 two-sensor eye test + Fig4 per-company regime figures
+
 **Planned (not started):**
-- [ ] Latent-state fusion model (HMM-family) over the aligned channels (Step 3-4)
-- [ ] Signal processing (normalization, change-point / acceleration detection)
-      benchmarked against the untouched naive baseline (b)
+- [ ] Joint multi-channel fusion model over the aligned channels (Step 4)
+- [ ] Expanding-window re-estimation = true out-of-sample filtered probs (Step 5)
+- [ ] Wider universe + partial pooling / hierarchy (Step 5)
 - [ ] Point-in-time backtest honouring the measured lags + `knowable_at` dates (c)
 - [ ] Write-up / working paper
 

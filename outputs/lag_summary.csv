@@ -3,7 +3,7 @@ NVDA,NVIDIA,filing_to_publication,months,8523,6100,0.716,13.32,17.97,6.41,18.14,
 NVDA,NVIDIA,filing_to_grant,months,8523,5734,0.716,42.84,38.39,27.04,53.52,2.79,162.3,22.12
 AMD,AMD,filing_to_publication,months,14688,4691,0.319,15.37,18.04,15.05,18.17,3.32,49.54,5.56
 AMD,AMD,filing_to_grant,months,14688,13101,0.319,31.11,28.22,21.29,37.65,4.6,137.99,14.63
-MRVL,Marvell,filing_to_publication,months,9431,2340,0.248,6.27,5.98,3.88,6.24,3.29,42.35,4.01
-MRVL,Marvell,filing_to_grant,months,9431,9058,0.248,31.13,27.63,18.17,39.75,4.63,136.41,17.67
+MRVL,Marvell,filing_to_publication,months,9409,2336,0.248,6.26,5.98,3.88,6.24,3.29,42.35,4.0
+MRVL,Marvell,filing_to_grant,months,9409,9037,0.248,31.14,27.63,18.2,39.75,4.63,136.41,17.66
 MU,Micron,filing_to_publication,months,45184,27001,0.598,9.45,6.01,3.88,18.04,3.29,57.79,6.67
 MU,Micron,filing_to_grant,months,45184,39466,0.598,27.73,24.61,17.87,34.0,2.33,175.21,14.54

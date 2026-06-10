@@ -126,9 +126,15 @@ PUBLICATION_SORT_FIELD = "document_number"
 # ~99% of NVIDIA into "NVIDIA CORP"; the prefix handles the ~1% tail
 # (typos like NVIDIA CORPORTION, subsidiaries like NVIDIA TECHNOLOGY UK LTD).
 #
+# CLEANUP RULE (applied symmetrically to all four companies): an assignee is
+# excluded when it is VERIFIABLY a different company or a person. Names with
+# >=20 applications were verified individually; ambiguous names with <10
+# applications are documented as residual noise but NOT excluded (we do not
+# guess). The audit CSV's `excluded` section records every drop with a reason.
+#
 # `exclude_name_like` (optional) lists prefixes that the company's `name_like`
-# would otherwise capture but that belong to UNRELATED companies. Each entry
-# carries the reason — this is the whitepaper's false-positive audit trail.
+# would otherwise capture but that belong to UNRELATED companies or persons.
+# Each entry carries the reason — the whitepaper's false-positive audit trail.
 # `include_name_like` (optional) is the stricter tool for a polluted net: when
 # present, a `name_like` match must ALSO hit one of these prefixes (a curated
 # allowlist of the company's real entities), otherwise it is excluded.
@@ -157,6 +163,35 @@ COMPANIES = [
         # Role: mid-cap, connectivity/networking. DOMAIN-RELEVANT case.
         "name_like": "MARVELL%",
         "expect_min_patents": 1000,
+        # Step-2 re-audit: MARVELL% also catches individual inventors named
+        # Marvell* and a few unrelated companies (~22 apps, 0.2%). Excluded
+        # per the cleanup rule above. NOT excluded: MARVELLWORLD TRADE LTD —
+        # a concatenation typo of the legitimate MARVELL WORLD TRADE LTD.
+        "exclude_name_like": [
+            {"prefix": "MARVELLUM%",
+             "reason": "Marvellum Company — unrelated (paper company), "
+                       "not a Marvell Technology entity"},
+            {"prefix": "MARVELLOUS%",
+             "reason": "MARVELLOUS TECHNOLOGY / MARVELLOUS DAY INDUSTRIAL — "
+                       "unrelated companies sharing the letter prefix"},
+            {"prefix": "MARVELLA%",
+             "reason": "Marvella Corp — unrelated company"},
+            {"prefix": "MARVELLY%",
+             "reason": "individual inventor (MARVELLY JOHN DUNSTAN), "
+                       "not a company"},
+            {"prefix": "MARVELLE %",
+             "reason": "individual inventors (MARVELLE M MEYDAM, "
+                       "MARVELLE SAUNDERS), not companies"},
+            {"prefix": "MARVELLI %",
+             "reason": "individual inventor (MARVELLI RICHARD), not a company"},
+            {"prefix": "MARVELL KRISTAN%",
+             "reason": "individual inventor, not a company"},
+            {"prefix": "MARVELL WILLIAM%",
+             "reason": "individual inventor, not a company"},
+            {"prefix": "MARVELL TOWNSEND%",
+             "reason": "Marvell Townsend Further Processing B.V. — unrelated "
+                       "Dutch company"},
+        ],
         # SEC's ticker map only carries the SUCCESSOR entity (Marvell
         # Technology, Inc., CIK 1835632, created in the 2021 Inphi merger),
         # whose XBRL history starts FY2020. The pre-2021 history sits under

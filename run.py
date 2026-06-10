@@ -45,6 +45,10 @@ YF_CROSSCHECK_CSV = os.path.join(config.OUTPUT_DIR, "yfinance_crosscheck.csv")
 REGIME_PROBS_CSV = os.path.join(config.OUTPUT_DIR, "regime_probabilities.csv")
 HMM_PARAMS_CSV = os.path.join(config.OUTPUT_DIR, "hmm_parameters.csv")
 REGIME_SWITCHES_CSV = os.path.join(config.OUTPUT_DIR, "regime_switches.csv")
+FUSION_PROBS_CSV = os.path.join(config.OUTPUT_DIR, "fusion_regime_probabilities.csv")
+FUSION_PARAMS_CSV = os.path.join(config.OUTPUT_DIR, "fusion_parameters.csv")
+ABLATION_CSV = os.path.join(config.OUTPUT_DIR, "ablation_switch_dates.csv")
+SEPARATION_CSV = os.path.join(config.OUTPUT_DIR, "separation_test.csv")
 
 _RAW_FIELDS = ["ticker", "label", "name_like", "patent_id", "assignee_id",
                "assignee_org", "filing_date", "publication_date", "grant_date",
@@ -203,6 +207,7 @@ def main():
     _print_summary(companies, baseline, lag_sum, consistency)
 
     # ---- STEP 2: financial channel (SEC EDGAR) + channel alignment grid ----
+    ch = None
     financials = run_financials()
     if financials:
         ch = channels.build_channels(companies, financials)
@@ -222,11 +227,15 @@ def main():
         logger.info("wrote figure -> %s", fig3)
 
     # ---- STEP 3: patent-only NB-HMM baseline (single-channel regimes) ----
-    run_regimes(companies)
+    step3_results = run_regimes(companies)
+
+    # ---- STEP 4: joint multi-channel HMM + ablation + separation test ----
+    if ch is not None:
+        run_fusion(step3_results, ch)
     return 0
 
 
-def run_regimes(companies) -> None:
+def run_regimes(companies) -> list:
     from qvm.analysis import regimes
     results = regimes.analyze_all(companies)
 
@@ -257,6 +266,49 @@ def run_regimes(companies) -> None:
                     "p_high_at_switch"]].to_string(index=False))
     for res in results:
         print(f"  [{res['ticker']}] {res['note']}")
+    print("=" * 72)
+    return results
+
+
+def run_fusion(step3_results: list, ch: pd.DataFrame) -> None:
+    from qvm.analysis import fusion
+    results = fusion.analyze_all_fusion(step3_results, ch)
+
+    fusion.fusion_probabilities_table(results).to_csv(FUSION_PROBS_CSV, index=False)
+    params = fusion.fusion_parameters_table(results)
+    params.to_csv(FUSION_PARAMS_CSV, index=False)
+    ablation = fusion.ablation_switch_table(results)
+    ablation.to_csv(ABLATION_CSV, index=False)
+    sep = fusion.separation_test_table(results)
+    sep.to_csv(SEPARATION_CSV, index=False)
+    logger.info("wrote fusion outputs -> %s | %s | %s | %s", FUSION_PROBS_CSV,
+                FUSION_PARAMS_CSV, ABLATION_CSV, SEPARATION_CSV)
+
+    markers = fusion.event_markers(ch)
+    fig5 = plots.plot_ablation_filtered(results, markers, config.OUTPUT_DIR)
+    fig6 = plots.plot_state_profiles(results, config.OUTPUT_DIR)
+    logger.info("wrote figures -> %s | %s", fig5, fig6)
+
+    print("\n" + "=" * 72)
+    print("QVM-V2 STEP 4 — JOINT MULTI-CHANNEL HMM: ABLATION + SEPARATION TEST")
+    print("=" * 72)
+    print(f"\nNOTE: {fusion.FUSION_CAVEAT}")
+    print("\n--- joint-model state profiles (state 0 -> 1, ordered by patents) ---")
+    cols = ["ticker", "model", "patent_count_mean_s0", "patent_count_mean_s1",
+            "gross_margin_mean_s0", "gross_margin_mean_s1",
+            "revenue_yoy_mean_s0", "revenue_yoy_mean_s1",
+            "restarts_at_best_logl", "restart_logl_spread"]
+    pc = params[params["model"] == "C"]
+    print(pc[[c for c in cols if c in pc.columns]].to_string(index=False))
+    print("\n--- BIC 2 vs 3 states (within model only; never across A/B/C) ---")
+    print(params[["ticker", "model", "bic_2state",
+                  "bic_3state"]].to_string(index=False))
+    print("\n--- ablation: persistent filtered switches (A=patent, B=fin, C=joint) ---")
+    print(ablation[["ticker", "model", "quarter",
+                    "direction"]].to_string(index=False))
+    print("\n--- separation test (pre-defined) ---")
+    print(sep[["ticker", "model", "high_regime_entries", "high_regime_exits",
+               "still_high_at_sample_end"]].to_string(index=False))
     print("=" * 72)
 
 

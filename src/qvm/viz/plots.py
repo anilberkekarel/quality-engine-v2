@@ -256,6 +256,101 @@ def plot_regimes(res: dict, out_dir: str) -> str:
     return path
 
 
+def plot_ablation_filtered(results: list, markers: dict, out_dir: str) -> str:
+    """Fig5 (whitepaper centerpiece candidate): per company, the three
+    models' FILTERED P(high) curves overlaid + data-derived event markers.
+
+    A = patent-only (Step 3, reused), B = financial-only, C = joint.
+    Returns the PNG path.
+    """
+    fig, axes = plt.subplots(len(results), 1, figsize=(11, 2.9 * len(results)),
+                             sharex=True)
+    for ax, res in zip(axes, results):
+        t = res["quarters"].to_timestamp()
+        a_filt = res["step3"]["nb2"].filtered[:, 1]
+        ax.plot(t, a_filt, color="#999", lw=1.2, ls="--",
+                label="A patent-only (Step 3)")
+        ax.plot(t, res["B"].filtered[:, 1], color="#1f77b4", lw=1.2, ls=":",
+                label="B financial-only")
+        ax.plot(t, res["C"].filtered[:, 1],
+                color=_COMPANY_COLOR.get(res["ticker"], "#333"), lw=2.0,
+                label="C joint (3 channels)")
+        ax.axhline(0.5, color="#bbb", lw=0.7)
+        for q, text in markers.get(res["ticker"], []):
+            import pandas as pd
+            tq = pd.Period(q, freq="Q").to_timestamp()
+            if t[0] <= tq <= t[-1]:
+                ax.axvline(tq, color="#d62728", lw=1.0, ls="-.", alpha=0.8)
+                ax.text(tq, 1.06, f" {text}", fontsize=7, color="#d62728",
+                        ha="left", va="bottom")
+        ax.set_ylim(-0.05, 1.18)
+        ax.set_yticks([0, 0.5, 1])
+        ax.set_ylabel("P(high) filtered")
+        ax.set_title(f"{res['label']} ({res['ticker']})", fontsize=10, loc="left")
+        if ax is axes[0]:
+            ax.legend(frameon=False, fontsize=8, loc="center left", ncol=3)
+    axes[-1].set_xlabel("Quarter")
+    fig.suptitle("Ablation — filtered P(high regime): patent-only vs "
+                 "financial-only vs joint", fontweight="bold", y=0.995)
+    fig.text(0.01, -0.01, _CAPTION + " Models: 2-state HMMs (NB counts / "
+             "Gaussian financials), full-sample parameters — DESCRIPTIVE; "
+             "real-time version is Step 5. Event markers derived by rule "
+             "(MU: as-filed gross margin -15pp YoY episode starts; NVDA: "
+             "first revenue YoY >= +100%).",
+             fontsize=7, style="italic", color="#555")
+    fig.tight_layout(rect=(0, 0, 1, 0.985))
+    path = os.path.join(out_dir, "fig5_ablation_filtered.png")
+    _ensure_dir(path)
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def plot_state_profiles(results: list, out_dir: str) -> str:
+    """Fig6 (compact): state-conditional channel means of the JOINT model —
+    4 companies x 2 states x 3 channels, one glance at "does 'high' mean the
+    same thing everywhere?". Returns the PNG path.
+    """
+    import numpy as np
+
+    channels = [("patent_count", "Patent filings / q", "mus", "{:.0f}"),
+                ("gross_margin", "Gross margin", "means", "{:.1%}"),
+                ("revenue_yoy", "Revenue YoY", "means", "{:+.1%}")]
+    tickers = [res["ticker"] for res in results]
+    fig, axes = plt.subplots(1, 3, figsize=(11, 3.2))
+    for ax, (name, title, key, fmt) in zip(axes, channels):
+        mat = np.array([[res["C"].channel_params[name][key][k]
+                         for k in (0, 1)] for res in results], dtype=float)
+        # color: within-company scaling, so the low->high DIRECTION pops
+        norm = (mat - mat.min(axis=1, keepdims=True)) / np.maximum(
+            mat.max(axis=1, keepdims=True) - mat.min(axis=1, keepdims=True),
+            1e-12)
+        ax.imshow(norm, cmap="RdYlGn", vmin=0, vmax=1, aspect="auto")
+        for i in range(mat.shape[0]):
+            for j in range(2):
+                ax.text(j, i, fmt.format(mat[i, j]), ha="center", va="center",
+                        fontsize=9, fontweight="bold")
+        ax.set_xticks([0, 1], ["low state", "high state"], fontsize=8.5)
+        ax.set_yticks(range(len(tickers)), tickers, fontsize=9)
+        ax.set_title(title, fontsize=10)
+        ax.grid(False)
+        for s in ax.spines.values():
+            s.set_visible(False)
+    fig.suptitle("Joint-model state profiles — is the 'high' state the same "
+                 "thing in every company?", fontweight="bold")
+    fig.text(0.01, -0.04, "States ordered by patent mean (state 1 = high "
+             "patent tempo). Color: within-company scaling, green = the "
+             "larger value. A high-patent state whose financial cells are "
+             "red = patents and financials DISAGREE in that company. "
+             + _CAPTION, fontsize=7, style="italic", color="#555")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    path = os.path.join(out_dir, "fig6_state_profiles.png")
+    _ensure_dir(path)
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def plot_three_dates(baseline, out_dir, ticker="NVDA"):
     """Fig2: one company's three date series overlaid (yearly). Returns path."""
     yearly = baseline[(baseline["granularity"] == "year")

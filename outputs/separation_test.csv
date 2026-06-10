@@ -1,0 +1,13 @@
+ticker,model,high_regime_entries,high_regime_exits,still_high_at_sample_end,pre_defined_questions
+NVDA,A,2005Q4; 2012Q3; 2019Q1,2008Q1; 2014Q2,True,"MU: does C exit with the ~2019 margin collapse, earlier than A's 2023Q1? NVDA: when does C enter, does persistence survive? AMD/MRVL: describe honestly (AMD patent channel carries a suspected Xilinx-M&A composition effect). descriptive Step-4 analysis (filing-dated patents, as_filed financials, full-sample parameters); filtered probs are causal in observations but parameters are full-sample (future leaks via parameters); true OOS = expanding-window, Step 5"
+NVDA,B,2016Q3; 2023Q2,2022Q2,True,
+NVDA,C,2005Q4; 2012Q4; 2019Q1,2008Q1; 2014Q2,True,
+AMD,A,2021Q4,none,True,
+AMD,B,2010Q1; 2019Q4,2012Q1,True,
+AMD,C,2010Q2; 2019Q4,2012Q1,True,
+MRVL,A,2007Q2,2015Q3,False,
+MRVL,B,2009Q4; 2017Q1,2012Q1; 2018Q3,False,
+MRVL,C,2007Q2,2015Q2,False,
+MU,A,2006Q2; 2017Q3,2005Q4; 2006Q4; 2023Q1,True,
+MU,B,2013Q3; 2017Q1; 2020Q3,2011Q2; 2015Q3; 2019Q2; 2022Q4,False,
+MU,C,2006Q2; 2017Q3,2005Q4; 2007Q1; 2023Q1,False,

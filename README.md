@@ -28,10 +28,15 @@ questions:
 **Implemented so far: STEP 1** (patent data layer + raw visualization + date-lag
 measurement), **STEP 2** (assignee-match cleanup of the Micron control case,
 SEC EDGAR XBRL financial channel with point-in-time `filed` dates, and the
-quarterly channel-alignment grid `outputs/channels.csv`), and **STEP 3** (the
+quarterly channel-alignment grid `outputs/channels.csv`), **STEP 3** (the
 patent-only 2-state Negative-Binomial HMM baseline — single-channel regime
 detection, written from scratch with log-space EM and validated against
-brute-force inference). The joint fusion model is Step 4.
+brute-force inference), and **STEP 4** (the joint multi-channel HMM —
+NB patent counts + Gaussian gross margin + Gaussian revenue YoY under one
+latent state, with a patent-only / financial-only / joint ablation and a
+pre-defined separation test). Steps 3-4 are DESCRIPTIVE (full-sample
+parameters); the real-time validation (expanding window, knowable_at
+discipline, publication-dated patents) is Step 5.
 
 ---
 
@@ -131,6 +136,45 @@ Step 3 artifacts (committed, in `outputs/`):
 - `fig4_regimes_<TICKER>.png` — counts with smoothed high-regime shading +
   filtered probability panel.
 
+Step 4 artifacts (committed, in `outputs/`):
+- `fusion_regime_probabilities.csv` — filtered/smoothed P(high) + Viterbi for
+  models B (financial-only) and C (joint); A lives in
+  `regime_probabilities.csv` and is never refit.
+- `fusion_parameters.csv` — per state: channel means/sigmas, NB dispersion,
+  transitions, durations, BIC 2-vs-3 states, restart stability.
+- `ablation_switch_dates.csv` — persistent filtered switches, 3 models x 4
+  companies (logL/BIC are NOT compared across models — different observation
+  sets; the comparison is regime DATES).
+- `separation_test.csv` — the pre-defined headline test: high-regime
+  entry/exit dates per model, MU-exit and NVDA-persistence questions.
+- `fig5_ablation_filtered.png` — three models' filtered P(high) overlaid per
+  company, with rule-derived event markers.
+- `fig6_state_profiles.png` — joint-model state-conditional channel means
+  (4 companies x 2 states x 3 channels): is "high" the same thing everywhere?
+
+### Joint multi-channel HMM (Step 4)
+
+One latent state generates all three channels, conditionally independently:
+patent counts ~ NB(mu_S, r), gross margin ~ N(m_S, sigma_S), revenue YoY ~
+N(g_S, tau_S). A quarter's log-emission is the SUM of the OBSERVED channels'
+log-densities — missing channels (pre-2009 financials) are skipped, never
+zero-filled. Gaussian variances carry a scale-aware floor (no singularities);
+states are ordered by the patent mean (gross margin for the financial-only
+model); 20 restarts; synthetic recovery + masked-data tests in
+`tests/test_fusion_synthetic.py`.
+
+**Pre-defined separation test, honest result:** the joint model did NOT pull
+Micron's high-regime exit earlier (C exits 2023Q1, same date as patent-only A;
+filtered P(high) stays >=0.96 straight through the 2019 margin collapse). With
+~500 counts/quarter, the NB channel's likelihood dominates two Gaussian terms
+under conditional independence — channel weighting is a real Step-5+ design
+question, documented, not tuned away. What fusion DID add: (i) the exit is
+far more decisive (P(high) ~1e-7 vs A's 0.21 at 2023Q1) and MU ends the
+sample OUT of the high regime while A drifts back to 0.51; (ii) the
+financial-only model B alone DOES date the MU cycle (down 2019Q2, up 2020Q3,
+down 2022Q4); (iii) AMD's joint entry moves from 2021Q4 (patent-only,
+M&A-composition suspect) to 2019Q4, in line with its financial turnaround.
+
 ### Patent-only NB-HMM baseline (Step 3)
 
 2-state HMM with Negative-Binomial emissions (counts are overdispersed —
@@ -194,14 +238,17 @@ src/qvm/
     lag.py                        # filing/publication/grant lag measurement
     channels.py                   # channel-alignment grid (fusion model input)
     regimes.py                    # Step 3 orchestration: data cut, model suite, switches
+    fusion.py                     # Step 4 orchestration: ablation, separation test
   models/
     nb_hmm.py                     # from-scratch NB/Poisson HMM (log-space EM)
+    fusion_hmm.py                 # joint multi-channel HMM (NB + Gaussians, missing-aware)
   viz/
     plots.py                      # whitepaper-grade figures
 run.py                            # orchestration + CSV/PNG output + console report
 tests/test_pipeline_synthetic.py  # network-free patent-pipeline validation
 tests/test_financials_synthetic.py# network-free financial-extraction validation
 tests/test_hmm_synthetic.py       # brute-force FB validation + EM parameter recovery
+tests/test_fusion_synthetic.py    # joint-EM recovery + missing-data masking tests
 ```
 
 ### Study universe & assignee matching
@@ -265,9 +312,19 @@ harmonized names were folded in.
       Poisson), GaussianHMM cross-check
 - [x] Fig3 two-sensor eye test + Fig4 per-company regime figures
 
+**Done (Step 4, this checkpoint):**
+- [x] Joint multi-channel HMM (NB + 2 Gaussians, missing-channel-aware EM,
+      variance floor, label ordering by patent mean), synthetic + masked-data
+      recovery tests
+- [x] Ablation A/B/C (patent-only reused from Step 3, financial-only, joint)
+      compared on regime DATES (no cross-model likelihood race)
+- [x] Pre-defined separation test, reported as it came out (MU exit date did
+      NOT move; decisiveness and end-state did — see Step 4 section)
+- [x] Fig5 ablation overlay + Fig6 state-profile heatmap
+
 **Planned (not started):**
-- [ ] Joint multi-channel fusion model over the aligned channels (Step 4)
 - [ ] Expanding-window re-estimation = true out-of-sample filtered probs (Step 5)
+- [ ] Channel weighting / robust emissions (NB dominance is a finding to address)
 - [ ] Wider universe + partial pooling / hierarchy (Step 5)
 - [ ] Point-in-time backtest honouring the measured lags + `knowable_at` dates (c)
 - [ ] Write-up / working paper

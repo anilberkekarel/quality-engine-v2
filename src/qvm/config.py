@@ -125,6 +125,16 @@ PUBLICATION_SORT_FIELD = "document_number"
 # This is the approved "Option 3". The harmonized field already collapses
 # ~99% of NVIDIA into "NVIDIA CORP"; the prefix handles the ~1% tail
 # (typos like NVIDIA CORPORTION, subsidiaries like NVIDIA TECHNOLOGY UK LTD).
+#
+# `exclude_name_like` (optional) lists prefixes that the company's `name_like`
+# would otherwise capture but that belong to UNRELATED companies. Each entry
+# carries the reason — this is the whitepaper's false-positive audit trail.
+# `include_name_like` (optional) is the stricter tool for a polluted net: when
+# present, a `name_like` match must ALSO hit one of these prefixes (a curated
+# allowlist of the company's real entities), otherwise it is excluded.
+# Both filters are applied in SQL for live pulls AND re-applied in pandas when
+# loading the cache, so cached pulls from before the rule are cleaned
+# identically.
 COMPANIES = [
     {
         "ticker": "NVDA",
@@ -147,6 +157,15 @@ COMPANIES = [
         # Role: mid-cap, connectivity/networking. DOMAIN-RELEVANT case.
         "name_like": "MARVELL%",
         "expect_min_patents": 1000,
+        # SEC's ticker map only carries the SUCCESSOR entity (Marvell
+        # Technology, Inc., CIK 1835632, created in the 2021 Inphi merger),
+        # whose XBRL history starts FY2020. The pre-2021 history sits under
+        # the predecessor's CIK, fetched additionally and merged per period.
+        "sec_additional_ciks": [
+            {"cik": 1058057,
+             "reason": "Marvell Technology Group Ltd — predecessor entity "
+                       "(Bermuda), delisted at the 2021 reorganization"},
+        ],
     },
     {
         "ticker": "MU",
@@ -156,8 +175,118 @@ COMPANIES = [
         # would be a FALSE POSITIVE -> the study's internal control.
         "name_like": "MICRON%",
         "expect_min_patents": 3000,
+        # The MICRON% net catches a LONG tail of unrelated small companies
+        # (~120 names, ~1.1k apps): two sizable ones found in the Step-1 audit
+        # (MICRONAS GmbH, MICRONIC Laser — kept below with documented reasons)
+        # plus a Step-2 scatter (MICRON DEVICES LLC, MICRON OPTICS, MICRONEL
+        # AG, MICRONIT BV, MICRONET*, MICRONIX*, ...). The control case must
+        # be clean, so MU additionally uses an ALLOWLIST: a match must also
+        # hit one of the `include_name_like` prefixes below — Micron
+        # Technology Inc, its known subsidiaries, and their typo variants
+        # (curated from the full 199-name audit dump). Ambiguous bare names
+        # (MICRON CORP, MICRON CO LTD, MICRON INC...) are NOT allowlisted:
+        # Micron Technology never filed under them, ~17 apps, likely Japanese
+        # 'Micron Corp' etc. Everything dropped lands in the audit CSV.
+        "include_name_like": [
+            "MICRON TECH%",        # MICRON TECHNOLOGY INC + the typo tail
+                                   # (TECHNOLGY, TECHONOLOGY, TECHNOLOGY INCV,
+                                   # ...) + TECH INC / HOLDING / LICENSING
+            "MICRON TEHNOLOGY%",   # typos that break the TECH prefix
+            "MICRON TECNOLOGY%",
+            "MICRON TCHNOLOGY%",
+            "MICRON TEDHNOLOGY%",
+            "MICRONG TECHNOLOGY%",
+            "MICRONTECHNOLOGY%",   # concatenation typos
+            "MICRONBTECHNOLOGY%",
+            "MICRON ELECTRONIC%",  # Micron Electronics Inc — PC subsidiary
+            "MICRON ELETRONICS%",  # its typos
+            "MICRON ELECTONICS%",
+            "MICRON SEMICONDUCTOR%",  # Micron Semiconductor Inc (Boise sub)
+            "MICRON COMMUNICATION%",  # RFID subsidiary
+            "MICRON DISPLAY%",        # FED display subsidiary
+            "MICRON QUANTUM%",        # flash subsidiary (Micron Quantum Devices)
+            "MICRONPC%",              # MicronPC LLC
+            "MICRON PC%",
+            "MICRON CUSTOM MANUFACTURING%",  # MCMS Inc spin-off
+            "MICRON MEMORY%",         # Micron Memory Japan (ex-Elpida)
+        ],
+        "exclude_name_like": [
+            {
+                "prefix": "MICRONAS%",
+                "reason": "Micronas GmbH/Intermetall — German semiconductor "
+                          "company (Hall sensors), unrelated to Micron Technology",
+            },
+            {
+                "prefix": "MICRONIC%",
+                "reason": "Micronic Laser Systems / Mydata AB — Swedish "
+                          "lithography company (and MICRONICS* entities), "
+                          "unrelated to Micron Technology",
+            },
+        ],
     },
 ]
+
+# ===========================================================================
+# FINANCIAL CHANNEL (Step 2): SEC EDGAR XBRL primary, yfinance sanity, FMP slot
+# ===========================================================================
+# SEC EDGAR is free and key-less but REQUIRES a User-Agent identifying the
+# requester (fair-access policy) and <=10 requests/second. We make ~5 requests
+# total and cache every response, so we are far inside both limits.
+SEC_TICKER_CIK_URL = "https://www.sec.gov/files/company_tickers.json"
+SEC_COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
+SEC_USER_AGENT = "QVM-Research anilberke.karel@gmail.com"
+SEC_MIN_REQUEST_INTERVAL_S = 0.15  # >=0.1s between calls => <=10 req/s
+
+# us-gaap tag priority per canonical concept. Companies switch tags across
+# years (ASC 606 moved most from SalesRevenueNet/Revenues to RevenueFromContract...),
+# so extraction merges PER PERIOD in this priority order and logs, per company,
+# which tag covered which years (whitepaper methodology record).
+CONCEPT_TAG_PRIORITY = {
+    "revenue": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "SalesRevenueNet",
+        # AMD 2009-2011 quarterly revenue lives ONLY here (verified in its
+        # companyfacts); pro-forma tags (BusinessAcquisitionsProFormaRevenue)
+        # are deliberately NOT listed.
+        "SalesRevenueGoodsNet",
+    ],
+    "cost_of_revenue": [
+        "CostOfRevenue",
+        "CostOfGoodsAndServicesSold",
+        "CostOfGoodsSold",
+    ],
+    "gross_profit": ["GrossProfit"],
+    "operating_income": ["OperatingIncomeLoss"],
+}
+
+# Flow-period classification by duration in days. XBRL 10-Q facts also carry
+# 6- and 9-month YTD cumulatives — anything outside these windows is skipped.
+QUARTER_DURATION_DAYS = (70, 100)
+ANNUAL_DURATION_DAYS = (340, 380)
+
+# Refiled periods sometimes shift a boundary by a day (NVDA fiscal Q2-2011
+# appears as ..2010-07-31 and ..2010-08-01 in different filings). Periods whose
+# start AND end both differ by at most this many days are the SAME period.
+PERIOD_MATCH_TOLERANCE_DAYS = 5
+
+# Q4 is NOT filed separately (the 10-K carries the full FY): for flow concepts
+# Q4 := FY - (Q1+Q2+Q3). Derived Q4s failing these plausibility screens are
+# flagged in the q4 sanity report (negative revenue, or far off its siblings).
+Q4_MAX_RATIO_TO_SIBLINGS = 3.0  # |Q4| vs max(|Q1..Q3|)
+
+# FISCAL != CALENDAR YEAR (NVDA/MRVL end late Jan, MU late Aug/early Sep; only
+# AMD is calendar). Alignment NEVER uses XBRL fy/fp labels — each period's
+# 'end' date is mapped to the calendar quarter whose end is NEAREST (a fiscal
+# quarter ending 2024-01-28 belongs to calendar 2023Q4, not 2024Q1's label).
+# fy/fp would shift NVIDIA ~1 year and silently break the fusion alignment.
+
+# Channel-grid scope (Step 2 alignment table for the fusion model).
+CHANNELS_START_QUARTER = "2009Q1"
+
+# FMP (Financial Modeling Prep) — future premium source; skeleton only.
+# Key goes in .env (gitignored) as FMP_API_KEY=...
+FMP_API_KEY_ENV_VAR = "FMP_API_KEY"
 
 # ---------------------------------------------------------------------------
 # TEMPORAL SCOPE

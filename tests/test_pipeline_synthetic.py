@@ -61,11 +61,22 @@ def test_assign_and_query():
     assert _assign_company("ADVANCED MICRO DEVICES INC")["ticker"] == "AMD"
     assert _assign_company("CONVIDIA CORP") is None       # false positive rejected
     assert _assign_company("INVIDIATO COSMO L") is None   # false positive rejected
+    # exclude_name_like: unrelated companies inside the MICRON% net
+    assert _assign_company("MICRON TECHNOLOGY INC")["ticker"] == "MU"
+    assert _assign_company("MICRONAS GMBH") is None           # excluded (German)
+    assert _assign_company("MICRONIC LASER SYSTEMS AB") is None  # excluded (Swedish)
+    # include_name_like allowlist: small unrelated companies rejected,
+    # Micron-entity typos kept
+    assert _assign_company("MICRON DEVICES LLC") is None      # FL medical devices
+    assert _assign_company("MICRON OPTICS INC") is None       # Atlanta fiber sensing
+    assert _assign_company("MICRON ELETRONICS INC")["ticker"] == "MU"  # typo of the PC sub
+    assert _assign_company("MICRON TEHNOLOGY INC")["ticker"] == "MU"   # typo of the parent
     sql, params = build_query()
     assert "p.country_code = @country" in sql and "UNNEST(p.assignee_harmonized)" in sql
     assert "p.country_code AS country_code" in sql  # aliasing avoids ambiguity
     assert len([p for p in params if p.name.startswith("like")]) == 4
-    print("OK  assignee routing + parameterized query build")
+    assert "NOT LIKE @excl" in sql  # exclusions pushed into SQL for live pulls
+    print("OK  assignee routing + exclusions + parameterized query build")
 
 
 def main():
@@ -78,13 +89,15 @@ def main():
     rows += _company_rows("MARVELL ASIA PTE LTD", 700)
     rows += _company_rows("MICRON TECHNOLOGY INC", 1500)
     rows += _company_rows("CONVIDIA CORP", 50)  # noise that must be dropped
+    rows += _company_rows("MICRONAS GMBH", 40)  # excluded false positive
     df = pd.DataFrame(rows)
 
     companies = rows_to_companies(df)
     by = {c.ticker: c for c in companies}
     # collapse worked: 1800 applications, not 3600 publication rows
     assert by["NVDA"].n_patents == 1800, by["NVDA"].n_patents
-    assert by["MU"].n_patents == 1500
+    assert by["MU"].n_patents == 1500  # MICRONAS not counted...
+    assert by["MU"].excluded_assignees == {"MICRONAS GMBH": 40}  # ...but audited
     # noise rejected: only the 4 real companies present
     assert all(c.ticker in {"NVDA", "AMD", "MRVL", "MU"} for c in companies)
     # three dates recovered per application

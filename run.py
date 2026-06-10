@@ -27,7 +27,7 @@ import pandas as pd
 
 from qvm import config
 from qvm.data.base import CompanyPatents, PatentRecord
-from qvm.analysis import timeseries, lag
+from qvm.analysis import timeseries, lag, channels
 from qvm.viz import plots
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -38,6 +38,10 @@ BASELINE_CSV = os.path.join(config.OUTPUT_DIR, "naive_baseline_series.csv")
 LAG_SUMMARY_CSV = os.path.join(config.OUTPUT_DIR, "lag_summary.csv")
 LAG_CONSISTENCY_CSV = os.path.join(config.OUTPUT_DIR, "lag_cross_company.csv")
 ASSIGNEE_AUDIT_CSV = os.path.join(config.OUTPUT_DIR, "assignee_match_audit.csv")
+CHANNELS_CSV = os.path.join(config.OUTPUT_DIR, "channels.csv")
+FIN_DETAIL_CSV = os.path.join(config.OUTPUT_DIR, "financials_quarterly.csv")
+Q4_SANITY_CSV = os.path.join(config.OUTPUT_DIR, "q4_derivation_sanity.csv")
+YF_CROSSCHECK_CSV = os.path.join(config.OUTPUT_DIR, "yfinance_crosscheck.csv")
 
 _RAW_FIELDS = ["ticker", "label", "name_like", "patent_id", "assignee_id",
                "assignee_org", "filing_date", "publication_date", "grant_date",
@@ -65,11 +69,29 @@ def save_raw(companies: list[CompanyPatents]) -> None:
 
 
 def load_raw() -> list[CompanyPatents]:
+    from qvm.data.bigquery_provider import _is_excluded
     df = pd.read_csv(RAW_CSV, dtype=str)
     g = lambda v: v if isinstance(v, str) and v else None
+    spec_by_ticker = {s["ticker"]: s for s in config.COMPANIES}
     companies = []
     for (ticker, label), grp in df.groupby(["ticker", "label"], sort=False):
         nl = grp["name_like"].iloc[0]
+        # The cache may predate an exclude_name_like rule -> re-apply it here
+        # so cached and live pulls produce the identical universe. The rows we
+        # drop are counted into excluded_assignees for the audit CSV.
+        spec = spec_by_ticker.get(ticker, {})
+        n_before = len(grp)
+        upper = grp["assignee_org"].fillna("").str.upper()
+        excl_mask = upper.map(lambda u: _is_excluded(spec, u))
+        excluded = {
+            name: int(cnt) for name, cnt in
+            grp.loc[excl_mask, "assignee_org"].value_counts().items()
+        }
+        grp = grp[~excl_mask]
+        if excluded:
+            logger.info("[%s] cache exclusion filter: %d -> %d applications "
+                        "(%d excluded across %d assignee names)", label,
+                        n_before, len(grp), n_before - len(grp), len(excluded))
         records, audit, n_pub = [], {}, 0
         for _, r in grp.iterrows():
             pub = g(r.get("publication_date"))
@@ -89,7 +111,8 @@ def load_raw() -> list[CompanyPatents]:
             ticker=ticker, label=label, name_variants=[nl], records=records,
             matched_assignee_ids=dict(sorted(audit.items(),
                                              key=lambda kv: kv[1], reverse=True)),
-            n_publication_matched=n_pub))
+            n_publication_matched=n_pub,
+            excluded_assignees=excluded))
     return companies
 
 
@@ -100,11 +123,33 @@ def fetch_live() -> list[CompanyPatents]:
 
 # --------------------------------------------------------------------------- #
 def write_assignee_audit(companies: list[CompanyPatents]) -> None:
+    """Audit CSV: every harmonized name we MATCHED, then every name our LIKE
+    would have captured but an exclude_name_like rule REJECTED (with reason).
+    """
+    spec_by_ticker = {s["ticker"]: s for s in config.COMPANIES}
+
+    def _reason(spec: dict, name: str) -> str:
+        up = (name or "").upper()
+        for e in spec.get("exclude_name_like", []):
+            if up.startswith(e["prefix"].rstrip("%").upper()):
+                return f"excluded by {e['prefix']}: {e['reason']}"
+        if spec.get("include_name_like"):
+            return ("not in the curated entity allowlist (include_name_like) "
+                    "— unrelated company caught by the broad prefix")
+        return ""
+
     rows = []
     for c in companies:
         for name, count in c.matched_assignee_ids.items():
             rows.append({"ticker": c.ticker, "label": c.label,
-                         "harmonized_name": name, "application_count": count})
+                         "section": "matched", "harmonized_name": name,
+                         "application_count": count, "reason": ""})
+        spec = spec_by_ticker.get(c.ticker, {})
+        for name, count in c.excluded_assignees.items():
+            rows.append({"ticker": c.ticker, "label": c.label,
+                         "section": "excluded", "harmonized_name": name,
+                         "application_count": count,
+                         "reason": _reason(spec, name)})
     pd.DataFrame(rows).to_csv(ASSIGNEE_AUDIT_CSV, index=False)
     logger.info("wrote assignee audit -> %s", ASSIGNEE_AUDIT_CSV)
 
@@ -153,7 +198,91 @@ def main():
     logger.info("wrote figures -> %s | %s | %s", raw_path, norm_path, fig2)
 
     _print_summary(companies, baseline, lag_sum, consistency)
+
+    # ---- STEP 2: financial channel (SEC EDGAR) + channel alignment grid ----
+    financials = run_financials()
+    if financials:
+        ch = channels.build_channels(companies, financials)
+        ch.to_csv(CHANNELS_CSV, index=False)
+        logger.info("wrote channel grid -> %s (%d rows)", CHANNELS_CSV, len(ch))
+        detail = channels.financials_detail_table(financials)
+        detail.to_csv(FIN_DETAIL_CSV, index=False)
+        sanity = pd.DataFrame([{"ticker": t, **r}
+                               for t, f in financials.items() for r in f.q4_sanity])
+        sanity.to_csv(Q4_SANITY_CSV, index=False)
+        logger.info("wrote financial detail -> %s | q4 sanity -> %s",
+                    FIN_DETAIL_CSV, Q4_SANITY_CSV)
+        _print_step2_summary(financials, ch, sanity)
+        run_yfinance_crosscheck(financials)
     return 0
+
+
+def run_financials() -> dict:
+    """Fetch (or load cached) SEC EDGAR quarterly financials per company."""
+    from qvm.data.sec_edgar_provider import SECEdgarProvider
+    provider = SECEdgarProvider()
+    out = {}
+    for spec in config.COMPANIES:
+        try:
+            out[spec["ticker"]] = provider.get_company_financials(spec["ticker"])
+        except Exception as e:  # network / SEC outage: patents still usable
+            logger.error("SEC EDGAR fetch failed for %s: %s", spec["ticker"], e)
+            return {}
+    return out
+
+
+def run_yfinance_crosscheck(financials: dict) -> None:
+    """Sanity-only: recent yfinance quarters vs SEC latest values."""
+    from qvm.data.yfinance_provider import YFinanceProvider, cross_check
+    try:
+        yf_provider = YFinanceProvider()
+        records = []
+        for ticker, sec_fin in financials.items():
+            records.extend(cross_check(sec_fin, yf_provider.get_company_financials(ticker)))
+    except Exception as e:  # yfinance is best-effort; never block the pipeline
+        logger.warning("yfinance cross-check unavailable: %s", e)
+        return
+    df = pd.DataFrame(records)
+    df.to_csv(YF_CROSSCHECK_CSV, index=False)
+    bad = df[df["status"] == "MISMATCH"] if not df.empty else df
+    print(f"\n--- yfinance cross-check: {len(df)} comparisons, "
+          f"{len(bad)} mismatches (>2%) -> {os.path.basename(YF_CROSSCHECK_CSV)} ---")
+    if not bad.empty:
+        print(bad[["ticker", "concept", "yf_end", "sec_end", "yf_value",
+                   "sec_value_latest", "pct_diff"]].to_string(index=False))
+
+
+def _print_step2_summary(financials: dict, ch: pd.DataFrame, sanity: pd.DataFrame):
+    print("\n" + "=" * 72)
+    print("QVM-V2 STEP 2 — FINANCIAL CHANNEL + ALIGNMENT GRID (source: SEC EDGAR)")
+    print("=" * 72)
+    print("\n--- channel coverage (calendar quarters, %s onward) ---"
+          % config.CHANNELS_START_QUARTER)
+    print(channels.channels_summary(ch).to_string(index=False))
+
+    print("\n--- revenue tag provenance (which us-gaap tag covered which years) ---")
+    for ticker, fin in financials.items():
+        for concept in ("revenue", "cost_of_revenue", "gross_profit", "operating_income"):
+            for p in fin.tag_provenance.get(concept, []):
+                print(f"  {ticker:5s} {concept:17s} {p['tag']:55s} "
+                      f"{p['n_periods']:3d} periods  {p['first_end']} .. {p['last_end']}")
+        for note in fin.notes:
+            print(f"  {ticker:5s} NOTE: {note}")
+
+    if not sanity.empty:
+        flagged = sanity[sanity["status"] != "ok"]
+        derived = sanity[sanity["derived"]]
+        print(f"\n--- Q4 derivation sanity: {len(derived)} fiscal years derived, "
+              f"{len(flagged)} flagged ---")
+        if not flagged.empty:
+            print(flagged[["ticker", "concept", "fy_end", "n_quarters_found",
+                           "status"]].to_string(index=False))
+
+    restated = [(t, sum(o.restated for o in f.observations))
+                for t, f in financials.items()]
+    print("\n--- restatements (as_filed != latest): "
+          + ", ".join(f"{t}={n}" for t, n in restated) + " ---")
+    print("=" * 72)
 
 
 def _print_summary(companies, baseline, lag_sum, consistency):

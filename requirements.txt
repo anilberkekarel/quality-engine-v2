@@ -1,7 +1,8 @@
-# QVM-V2 step 1 (data layer + raw viz). Signal-processing deps come later.
+# QVM-V2 steps 1-2 (data layers + raw viz). Signal-processing deps come later.
 google-cloud-bigquery>=3.20
 db-dtypes>=1.2          # BigQuery -> pandas dtype support
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
-requests>=2.31          # only for the retired patentsview_provider (unused)
+requests>=2.31          # SEC EDGAR XBRL fetches (financial channel)
+yfinance>=1.0           # sanity cross-check of the SEC series (not a source)

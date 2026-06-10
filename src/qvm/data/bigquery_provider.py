@@ -78,8 +78,23 @@ def build_query() -> tuple[str, list]:
     like_clauses, params = [], []
     for i, spec in enumerate(config.COMPANIES):
         pname = f"like{i}"
-        like_clauses.append(f"a.name LIKE @{pname}")
+        clause = f"a.name LIKE @{pname}"
         params.append(bigquery.ScalarQueryParameter(pname, "STRING", spec["name_like"]))
+        # exclusions: false-positive prefixes the LIKE would otherwise capture
+        for j, excl in enumerate(spec.get("exclude_name_like", [])):
+            ename = f"excl{i}_{j}"
+            clause += f" AND a.name NOT LIKE @{ename}"
+            params.append(bigquery.ScalarQueryParameter(ename, "STRING", excl["prefix"]))
+        # allowlist: a match must also hit one of the curated entity prefixes
+        includes = spec.get("include_name_like", [])
+        if includes:
+            inc_names = []
+            for j, inc in enumerate(includes):
+                iname = f"inc{i}_{j}"
+                inc_names.append(f"a.name LIKE @{iname}")
+                params.append(bigquery.ScalarQueryParameter(iname, "STRING", inc))
+            clause += " AND (" + " OR ".join(inc_names) + ")"
+        like_clauses.append(f"({clause})")
     country_param = bigquery.ScalarQueryParameter("country", "STRING", config.PATENT_COUNTRY)
     params.append(country_param)
 
@@ -93,16 +108,45 @@ def build_query() -> tuple[str, list]:
     return sql, params
 
 
+def _is_excluded(spec: dict, name_upper: str) -> bool:
+    """True if the spec's filters reject this assignee name.
+
+    Mirrors the SQL: rejected when an exclude_name_like prefix matches, OR
+    when an include_name_like allowlist exists and NO allowlist prefix matches.
+    """
+    if any(name_upper.startswith(e["prefix"].rstrip("%").upper())
+           for e in spec.get("exclude_name_like", [])):
+        return True
+    includes = spec.get("include_name_like", [])
+    return bool(includes) and not any(
+        name_upper.startswith(inc.rstrip("%").upper()) for inc in includes)
+
+
 def _assign_company(assignee_name: str) -> dict | None:
-    """Map a harmonized assignee name to its company spec via prefix match."""
+    """Map a harmonized assignee name to its company spec via prefix match.
+
+    Mirrors the SQL exactly: prefix LIKE minus exclude_name_like prefixes.
+    Returns None for both never-matched names and excluded names; callers that
+    need the excluded set for auditing use `_assign_company_audited`.
+    """
+    spec, excluded = _assign_company_audited(assignee_name)
+    return None if excluded else spec
+
+
+def _assign_company_audited(assignee_name: str) -> tuple[dict | None, bool]:
+    """Like _assign_company but flags exclusion: (spec, was_excluded).
+
+    (spec, True) means the name matched spec's prefix but an exclusion rule
+    rejected it — exactly the rows the audit CSV must report.
+    """
     if not isinstance(assignee_name, str):
-        return None
+        return None, False
     up = assignee_name.upper()
     for spec in config.COMPANIES:
         prefix = spec["name_like"].rstrip("%").upper()
         if up.startswith(prefix):
-            return spec
-    return None
+            return spec, _is_excluded(spec, up)
+    return None, False
 
 
 def rows_to_companies(df: pd.DataFrame) -> list[CompanyPatents]:
@@ -112,15 +156,26 @@ def rows_to_companies(df: pd.DataFrame) -> list[CompanyPatents]:
     assignee_name, country_code, filing_date, publication_date, grant_date,
     priority_date (raw INTEGER yyyymmdd for the date columns).
     """
-    # tag each row with its company (drop rows that match no prefix -> tail noise)
+    # tag each row with its company (drop rows that match no prefix -> tail
+    # noise; rows an exclusion rule rejected are counted for the audit trail)
     df = df.copy()
-    df["_spec"] = df["assignee_name"].map(_assign_company)
-    df = df[df["_spec"].notna()]
+    assigned = df["assignee_name"].map(_assign_company_audited)
+    df["_spec"] = assigned.map(lambda t: t[0])
+    df["_excluded"] = assigned.map(lambda t: t[1])
+    excluded_rows = df[df["_excluded"]]
+    df = df[df["_spec"].notna() & ~df["_excluded"]]
     df["_ticker"] = df["_spec"].map(lambda s: s["ticker"])
 
     companies: list[CompanyPatents] = []
     for spec in config.COMPANIES:
         sub = df[df["_ticker"] == spec["ticker"]]
+        # excluded applications for THIS company (unique apps, not pub rows)
+        excl_sub = excluded_rows[excluded_rows["_spec"].map(
+            lambda s: s is not None and s["ticker"] == spec["ticker"])]
+        excl_audit = {
+            name: int(g["application_number"].nunique())
+            for name, g in excl_sub.groupby("assignee_name", sort=False)
+        } if not excl_sub.empty else {}
         records: list[PatentRecord] = []
         name_audit: dict[str, int] = {}
         n_pub = 0
@@ -155,6 +210,8 @@ def rows_to_companies(df: pd.DataFrame) -> list[CompanyPatents]:
             matched_assignee_ids=dict(sorted(
                 name_audit.items(), key=lambda kv: kv[1], reverse=True)),
             n_publication_matched=n_pub,
+            excluded_assignees=dict(sorted(
+                excl_audit.items(), key=lambda kv: kv[1], reverse=True)),
         ))
     return companies
 

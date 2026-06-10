@@ -54,6 +54,11 @@ class CompanyPatents:
     # ^ disambiguated assignee_id -> patent count, so we can SEE whether the
     #   match pulled one clean entity or a scatter of near-duplicates.
     n_publication_matched: int = 0             # how many got a publication_date
+    excluded_assignees: dict[str, int] = field(default_factory=dict)
+    # ^ assignee names the company's name_like WOULD have captured but that an
+    #   exclude_name_like rule rejected (name -> application count). Only
+    #   populated when loading from a cache that predates the exclusion; live
+    #   SQL pulls filter these server-side. Kept for the audit CSV.
 
     @property
     def n_patents(self) -> int:

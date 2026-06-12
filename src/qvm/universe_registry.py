@@ -68,6 +68,21 @@ UNIVERSE: list[dict] = [
      "delisted": "", "flags": ["M&A: Elpida 2013 (patent composition)"]},
 
     # ---- listed members ----
+    # DOCUMENTED AMENDMENT (Step 5b Görev 0, decided 2026-06-12, BEFORE any
+    # prediction was run): Qualcomm is SIC 3663 (radio/TV comms equipment), so
+    # the SIC-3674 selection rule excludes it — yet it is a semiconductor
+    # DEVICE company by any economic definition, a top-3 patent filer in the
+    # peer group, and the acquirer in the ATHR reattribution chain. Excluding
+    # the largest fabless designer on an SIC technicality would bias the
+    # universe more than the exception biases the rule. Recorded as the single
+    # SIC exception; the selection rule itself is unchanged.
+    {"ticker": "QCOM", "label": "Qualcomm", "ciks": [804328],
+     "name_likes": ["QUALCOMM%"], "delisted": "",
+     "flags": ["SIC exception: 3663, added by documented amendment (Görev 0, "
+               "pre-prediction)",
+               "M&A: Atheros 2011 (patent composition; ATHR member exits)"],
+     "notes": "amendment decision logged before the Step 5b prediction task "
+              "ran — not survivorship- or result-driven"},
     {"ticker": "INTC", "label": "Intel", "ciks": [50863],
      "name_likes": ["INTEL CORP%", "INTEL IP%", "INTEL AMERICAS%",
                     "INTEL MOBILE%", "INTEL DEUTSCHLAND%"],
@@ -106,10 +121,19 @@ UNIVERSE: list[dict] = [
                "INDUSTRIES LLC — both prefixes needed (continuity)",
                "M&A: Fairchild 2016 (patent composition)"]},
     {"ticker": "SWKS", "label": "Skyworks", "ciks": [4127],
-     "name_likes": ["SKYWORKS%"], "delisted": ""},
+     "name_likes": ["SKYWORKS%"], "delisted": "",
+     "notes": "SKYWORKS PANASONIC FILTER SOLUTIONS JAPAN (42 apps) KEPT — "
+              "consolidated JV (Skyworks majority owner since 2016), same "
+              "consolidation principle as subsidiaries (Görev 0 decision)"},
     {"ticker": "QRVO", "label": "Qorvo", "ciks": [1604778],
      "name_likes": ["QORVO%"], "delisted": "",
-     "flags": ["formed 2015 from RFMD + TriQuint (both separate delisted "
+     "notes": "QORVO BIOTECHNOLOGIES LLC (26 apps) KEPT — wholly-owned "
+              "subsidiary (Omnia diagnostics), consolidation principle: "
+              "consolidated subsidiaries' filings belong to the parent "
+              "regardless of business line (Görev 0 decision)",
+     "flags": ["member starts AT the merger closing (2015-01-01) — "
+               "RFMD/TQNT series END there (M&A attribution rule)",
+               "formed 2015 from RFMD + TriQuint (both separate delisted "
                "members); patent series pre-2015 lives under those names — "
                "continuity flag, NOT merged",
                "QRVO companyfacts comparatives reach back to 2013 = RFMD "
@@ -308,6 +332,99 @@ EXCLUDED_SCREEN: dict[int, tuple[str, str]] = {
     1272547: ("duplicate_coissuer", "Freescale Inc — merged into FSL member as predecessor CIK"),
     2058873: ("insufficient_depth", "Qnity Electronics (2025 spin-off, <8 quarters)"),
 }
+
+
+# --------------------------------------------------------------------------- #
+# M&A PATENT-ATTRIBUTION RULE (Step 5b Görev 0, pre-registered):
+# attribution SPLITS AT THE CLOSING DATE — an application FILED on/after the
+# closing under the target's assignee names belongs to the acquirer (if a
+# universe member) or to nobody (acquirer outside the universe -> the target's
+# series ends naturally; post-close filings dropped). In-universe double
+# counting is thereby impossible. Rules are applied in effective-date order,
+# so chains compose (PMC-Sierra -> Microsemi 2016 -> Microchip 2018).
+# `prefix` (optional) scopes a rule to one assignee prefix instead of the
+# whole member (CreeLED divestiture). Filing date is the split key — it is
+# the only date that exists at attribution time.
+# --------------------------------------------------------------------------- #
+REATTRIBUTIONS: list[dict] = [
+    {"from": "ATHR", "to": "QCOM", "effective": "2011-05-24",
+     "reason": "Qualcomm closing (member by documented amendment)"},
+    {"from": "NSM", "to": "TXN", "effective": "2011-09-23", "reason": "TI closing"},
+    {"from": "LSI", "to": "AVGO", "effective": "2014-05-06", "reason": "Avago closing"},
+    {"from": "IRF", "to": None, "effective": "2015-01-13",
+     "reason": "Infineon (non-member): post-close filings dropped"},
+    {"from": "RFMD", "to": "QRVO", "effective": "2015-01-01",
+     "reason": "Qorvo merger close"},
+    {"from": "TQNT", "to": "QRVO", "effective": "2015-01-01",
+     "reason": "Qorvo merger close"},
+    {"from": "CODE", "to": "CY", "effective": "2015-03-12",
+     "reason": "Cypress merger close"},
+    {"from": "FSL", "to": "NXPI", "effective": "2015-12-07", "reason": "NXP closing"},
+    {"from": "ALTR", "to": "INTC", "effective": "2015-12-28",
+     "reason": "Intel closing"},
+    {"from": "OVTI", "to": None, "effective": "2016-01-28",
+     "reason": "Chinese consortium (non-member)"},
+    {"from": "PMCS", "to": "MSCC", "effective": "2016-01-15",
+     "reason": "Microsemi closing"},
+    {"from": "BRCM", "to": "AVGO", "effective": "2016-02-01",
+     "reason": "Avago closing (renamed Broadcom)"},
+    {"from": "ATML", "to": "MCHP", "effective": "2016-04-04",
+     "reason": "Microchip closing"},
+    {"from": "FCS", "to": "ON", "effective": "2016-09-19", "reason": "onsemi closing"},
+    {"from": "ISIL", "to": None, "effective": "2017-02-24",
+     "reason": "Renesas (non-member)"},
+    {"from": "LLTC", "to": "ADI", "effective": "2017-03-10", "reason": "ADI closing"},
+    {"from": "MSCC", "to": "MCHP", "effective": "2018-05-29",
+     "reason": "Microchip closing (chains ex-PMC-Sierra forward)"},
+    {"from": "CAVM", "to": "MRVL", "effective": "2018-07-06",
+     "reason": "Marvell closing"},
+    {"from": "IDTI", "to": None, "effective": "2019-03-30",
+     "reason": "Renesas (non-member)"},
+    {"from": "CY", "to": None, "effective": "2020-04-16",
+     "reason": "Infineon (non-member)"},
+    {"from": "MLNX", "to": "NVDA", "effective": "2020-04-27",
+     "reason": "NVIDIA closing"},
+    {"from": "WOLF", "to": None, "effective": "2021-03-01", "prefix": "CREELED%",
+     "reason": "CreeLED divested to SMART Global (non-member); pre-close "
+               "CREELED filings stay with WOLF"},
+    {"from": "IPHI", "to": "MRVL", "effective": "2021-04-20",
+     "reason": "Marvell closing"},
+    {"from": "MXIM", "to": "ADI", "effective": "2021-08-26", "reason": "ADI closing"},
+    {"from": "XLNX", "to": "AMD", "effective": "2022-02-14", "reason": "AMD closing"},
+]
+
+
+def apply_reattributions(df, ticker_col: str = "_ticker"):
+    """Apply the M&A attribution rule to assigned publication rows.
+
+    Expects columns: ticker_col (member assignment from assignee prefixes),
+    assignee_name, filing_date (INTEGER yyyymmdd). Rules run in effective-date
+    order on the EVOLVING ticker column, so chains compose (a PMC-Sierra-named
+    2019 filing goes PMCS -> MSCC -> MCHP). `to=None` drops the rows (acquirer
+    outside the universe). Returns (df, change_log) where change_log counts
+    moved/dropped applications per rule — the Görev 0 transparency record.
+    """
+    import pandas as pd
+    df = df.copy()
+    filing = pd.to_numeric(df["filing_date"], errors="coerce").fillna(0)
+    change_log = []
+    for rule in sorted(REATTRIBUTIONS, key=lambda r: r["effective"]):
+        eff = int(rule["effective"].replace("-", ""))
+        mask = (df[ticker_col] == rule["from"]) & (filing >= eff)
+        if rule.get("prefix"):
+            pre = rule["prefix"].rstrip("%").upper()
+            mask &= df["assignee_name"].fillna("").str.upper().str.startswith(pre)
+        n_apps = df.loc[mask, "application_number"].nunique()
+        if rule["to"] is None:
+            df = df[~mask]
+            filing = filing[df.index]
+        else:
+            df.loc[mask, ticker_col] = rule["to"]
+        change_log.append({"from": rule["from"], "to": rule["to"] or "DROPPED",
+                           "effective": rule["effective"],
+                           "applications_moved": int(n_apps),
+                           "reason": rule["reason"]})
+    return df, change_log
 
 
 def universe_specs() -> list[dict]:

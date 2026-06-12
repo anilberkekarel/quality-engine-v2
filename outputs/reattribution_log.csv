@@ -1,0 +1,26 @@
+from,to,effective,applications_moved,reason
+ATHR,QCOM,2011-05-24,7,Qualcomm closing (member by documented amendment)
+NSM,TXN,2011-09-23,49,TI closing
+LSI,AVGO,2014-05-06,87,Avago closing
+RFMD,QRVO,2015-01-01,142,Qorvo merger close
+TQNT,QRVO,2015-01-01,24,Qorvo merger close
+IRF,DROPPED,2015-01-13,58,Infineon (non-member): post-close filings dropped
+CODE,CY,2015-03-12,2,Cypress merger close
+FSL,NXPI,2015-12-07,340,NXP closing
+ALTR,INTC,2015-12-28,594,Intel closing
+PMCS,MSCC,2016-01-15,0,Microsemi closing
+OVTI,DROPPED,2016-01-28,763,Chinese consortium (non-member)
+BRCM,AVGO,2016-02-01,175,Avago closing (renamed Broadcom)
+ATML,MCHP,2016-04-04,122,Microchip closing
+FCS,ON,2016-09-19,61,onsemi closing
+ISIL,DROPPED,2017-02-24,0,Renesas (non-member)
+LLTC,ADI,2017-03-10,86,ADI closing
+MSCC,MCHP,2018-05-29,83,Microchip closing (chains ex-PMC-Sierra forward)
+CAVM,MRVL,2018-07-06,65,Marvell closing
+IDTI,DROPPED,2019-03-30,58,Renesas (non-member)
+CY,DROPPED,2020-04-16,612,Infineon (non-member)
+MLNX,NVDA,2020-04-27,936,NVIDIA closing
+WOLF,DROPPED,2021-03-01,152,CreeLED divested to SMART Global (non-member); pre-close CREELED filings stay with WOLF
+IPHI,MRVL,2021-04-20,3,Marvell closing
+MXIM,ADI,2021-08-26,79,ADI closing
+XLNX,AMD,2022-02-14,411,AMD closing

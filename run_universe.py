@@ -30,7 +30,8 @@ import numpy as np
 import pandas as pd
 
 from qvm import config
-from qvm.universe_registry import EXCLUDED_SCREEN, UNIVERSE, universe_specs
+from qvm.universe_registry import (EXCLUDED_SCREEN, REATTRIBUTIONS, UNIVERSE,
+                                   apply_reattributions, universe_specs)
 from qvm.data.base import CompanyPatents, PatentRecord
 from qvm.data.bigquery_provider import _assign_company_audited, build_query
 from qvm.analysis import channels
@@ -44,6 +45,7 @@ AUDIT_CSV = os.path.join(config.OUTPUT_DIR, "universe_assignee_audit.csv")
 MA_CSV = os.path.join(config.OUTPUT_DIR, "ma_events.csv")
 QUALITY_CSV = os.path.join(config.OUTPUT_DIR, "universe_data_quality.csv")
 CHANNELS_CSV = os.path.join(config.OUTPUT_DIR, "channels_universe.csv")
+REATTRIBUTION_CSV = os.path.join(config.OUTPUT_DIR, "reattribution_log.csv")
 
 REVIEW_THRESHOLD = 20  # >=20-app assignee names are tagged REVIEW (user decides)
 
@@ -52,25 +54,38 @@ REVIEW_THRESHOLD = 20  # >=20-app assignee names are tagged REVIEW (user decides
 # M&A annotation layer (Görev D) — NOT a model input.
 # --------------------------------------------------------------------------- #
 MA_EVENTS = [  # (ticker, date, event) — manually curated, non-exhaustive
+    # acquirer-side rows mirror every in-universe closing: the Step-5b ±2Q
+    # robustness exclusion must blank BOTH sides of a deal window.
     ("TXN",  "2011-09", "acquired National Semiconductor (NSM exits)"),
-    ("ATHR", "2011-05", "acquired by Qualcomm (exits; acquirer outside universe)"),
+    ("QCOM", "2011-05", "acquired Atheros (ATHR exits; patent composition)"),
+    ("ATHR", "2011-05", "acquired by Qualcomm (exits; QCOM member by amendment)"),
     ("MCHP", "2012-08", "acquired Standard Microsystems"),
     ("MU",   "2013-07", "acquired Elpida Memory (patent composition)"),
     ("LSI",  "2014-05", "acquired by Avago (exits)"),
     ("IRF",  "2015-01", "acquired by Infineon (exits; acquirer outside universe)"),
     ("QRVO", "2015-01", "formed by RFMD + TriQuint merger (RFMD/TQNT exit)"),
     ("CODE", "2015-03", "Spansion merged into Cypress (exits)"),
+    ("CY",   "2015-03", "Spansion merged in (CODE exits; composition)"),
     ("ALTR", "2015-12", "acquired by Intel (exits)"),
+    ("INTC", "2015-12", "acquired Altera (ALTR exits; patent composition)"),
     ("FSL",  "2015-12", "acquired by NXP (exits)"),
+    ("NXPI", "2015-12", "acquired Freescale (FSL exits; patent composition)"),
     ("OVTI", "2016-01", "acquired by Chinese consortium (exits)"),
     ("PMCS", "2016-01", "acquired by Microsemi (exits)"),
+    ("MSCC", "2016-01", "acquired PMC-Sierra (PMCS exits; composition)"),
     ("BRCM", "2016-02", "acquired by Avago; Avago renamed Broadcom (exits)"),
+    ("AVGO", "2016-02", "acquired Broadcom Corp (BRCM exits; composition)"),
+    ("AVGO", "2014-05", "acquired LSI (LSI exits; patent composition)"),
     ("ATML", "2016-04", "acquired by Microchip (exits)"),
+    ("MCHP", "2016-04", "acquired Atmel (ATML exits; patent composition)"),
     ("FCS",  "2016-09", "acquired by onsemi (exits)"),
+    ("ON",   "2016-09", "acquired Fairchild (FCS exits; patent composition)"),
     ("ISIL", "2017-02", "acquired by Renesas (exits; acquirer outside universe)"),
     ("LLTC", "2017-03", "acquired by Analog Devices (exits)"),
+    ("ADI",  "2017-03", "acquired Linear (LLTC exits; patent composition)"),
     ("MXL",  "2017-05", "acquired Exar"),
     ("MSCC", "2018-05", "acquired by Microchip (exits)"),
+    ("MCHP", "2018-05", "acquired Microsemi (MSCC exits; composition)"),
     ("MRVL", "2018-07", "acquired Cavium (CAVM exits; patent composition)"),
     ("IDTI", "2019-03", "acquired by Renesas (exits; acquirer outside universe)"),
     ("NVDA", "2020-04", "acquired Mellanox (MLNX exits; patent composition)"),
@@ -78,7 +93,10 @@ MA_EVENTS = [  # (ticker, date, event) — manually curated, non-exhaustive
     ("ALGM", "2020-10", "IPO (financial series starts; patents reach back)"),
     ("MRVL", "2021-04", "acquired Inphi (IPHI exits; patent composition)"),
     ("SWKS", "2021-07", "acquired Silicon Labs infrastructure & automotive unit"),
+    ("SLAB", "2021-07", "sold infrastructure & automotive unit to Skyworks"),
     ("MXIM", "2021-08", "acquired by Analog Devices (exits)"),
+    ("ADI",  "2021-08", "acquired Maxim (MXIM exits; patent composition)"),
+    ("WOLF", "2021-03", "CreeLED divested to SMART Global (patent composition)"),
     ("WOLF", "2021-10", "Cree renamed Wolfspeed (same CIK; assignee names change)"),
     ("AMD",  "2022-02", "acquired Xilinx (XLNX exits; patent composition)"),
     ("MTSI", "2023-08", "acquired Wolfspeed RF business (composition)"),
@@ -131,12 +149,38 @@ def write_registry(quality: dict[str, dict] | None = None) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # Görev B: patents — one consolidated query + vectorized collapse + audit
 # --------------------------------------------------------------------------- #
+def _specs_missing_from_cache(df: pd.DataFrame, specs: list[dict]) -> list[dict]:
+    """Specs whose assignee prefixes match NOTHING in the cache — i.e. members
+    added to the registry after the cached pull (QCOM amendment)."""
+    names = pd.Series(df["assignee_name"].dropna().unique()).str.upper()
+    missing = []
+    for s in specs:
+        prefixes = [p.rstrip("%").upper()
+                    for p in (s.get("name_likes") or [s.get("name_like", "")])]
+        if not names.str.startswith(tuple(prefixes)).any():
+            missing.append(s)
+    return missing
+
+
 def fetch_universe_rows(specs: list[dict], use_cache: bool) -> pd.DataFrame:
     if use_cache:
         if not os.path.exists(UNIVERSE_RAW_CSV):
             raise SystemExit(f"no cache at {UNIVERSE_RAW_CSV}; run live first")
         logger.info("loading cached universe patents from %s", UNIVERSE_RAW_CSV)
-        return pd.read_csv(UNIVERSE_RAW_CSV)
+        df = pd.read_csv(UNIVERSE_RAW_CSV)
+        missing = _specs_missing_from_cache(df, specs)
+        if missing:
+            logger.info("cache lacks rows for %s — fetching just those specs",
+                        [s["ticker"] for s in missing])
+            add = _fetch_live_rows(missing, cache_path=None)
+            df = pd.concat([df, add], ignore_index=True)
+            df.to_csv(UNIVERSE_RAW_CSV, index=False)
+            logger.info("appended %d rows to %s", len(add), UNIVERSE_RAW_CSV)
+        return df
+    return _fetch_live_rows(specs, cache_path=UNIVERSE_RAW_CSV)
+
+
+def _fetch_live_rows(specs: list[dict], cache_path: str | None) -> pd.DataFrame:
     from google.cloud import bigquery
     from qvm.data.bigquery_provider import BigQueryPatentProvider
     prov = BigQueryPatentProvider()
@@ -154,7 +198,8 @@ def fetch_universe_rows(specs: list[dict], use_cache: bool) -> pd.DataFrame:
     df = job.result().to_dataframe(create_bqstorage_client=False)
     logger.info("BigQuery returned %d publication rows (%.2f GiB billed)",
                 len(df), (job.total_bytes_billed or 0) / 1024**3)
-    df.to_csv(UNIVERSE_RAW_CSV, index=False)
+    if cache_path:
+        df.to_csv(cache_path, index=False)
     return df
 
 
@@ -340,7 +385,13 @@ def main():
 
     raw = fetch_universe_rows(specs, args.use_cache)
     raw = assign_rows(raw, specs)
-    audit = write_audit(raw, specs)
+    audit = write_audit(raw, specs)  # name-level audit BEFORE reattribution
+    raw, change_log = apply_reattributions(raw)
+    log_df = pd.DataFrame(change_log)
+    log_df.to_csv(REATTRIBUTION_CSV, index=False)
+    logger.info("wrote M&A reattribution log -> %s (%d rules, %d applications "
+                "moved/dropped)", REATTRIBUTION_CSV, len(log_df),
+                int(log_df["applications_moved"].sum()))
     companies = collapse_to_companies(raw, specs)
     for c in companies:
         logger.info("  [%s] %d applications", c.ticker, c.n_patents)

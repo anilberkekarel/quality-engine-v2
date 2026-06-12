@@ -127,6 +127,10 @@ UNIVERSE: list[dict] = [
               "consolidation principle as subsidiaries (Görev 0 decision)"},
     {"ticker": "QRVO", "label": "Qorvo", "ciks": [1604778],
      "name_likes": ["QORVO%"], "delisted": "",
+     # panel membership starts at the merger closing; QRVO companyfacts
+     # comparatives reaching back to 2013 are the RFMD continuation and would
+     # double-count the separate RFMD member in the 2013-2014 cross-sections
+     "member_start": "2015Q1",
      "notes": "QORVO BIOTECHNOLOGIES LLC (26 apps) KEPT — wholly-owned "
               "subsidiary (Omnia diagnostics), consolidation principle: "
               "consolidated subsidiaries' filings belong to the parent "

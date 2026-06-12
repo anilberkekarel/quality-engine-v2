@@ -293,6 +293,8 @@ CONCEPT_TAG_PRIORITY = {
     ],
     "gross_profit": ["GrossProfit"],
     "operating_income": ["OperatingIncomeLoss"],
+    # Step 5b appendix target (earnings-change direction) — pre-registered add
+    "net_income": ["NetIncomeLoss"],
 }
 
 # Flow-period classification by duration in days. XBRL 10-Q facts also carry

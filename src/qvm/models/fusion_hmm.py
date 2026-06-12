@@ -44,10 +44,18 @@ _LOG_2PI = np.log(2.0 * np.pi)
 @dataclass
 class Channel:
     """One observation channel: values on the common quarterly grid,
-    np.nan = not observed that quarter (term skipped in the emission)."""
+    np.nan = not observed that quarter (term skipped in the emission).
+
+    `weight` tempers the channel's log-density in the EMISSION ONLY (E-step
+    state inference): P(y|S) ∝ prod_ch density^weight. The M-step stays
+    unweighted — with weight=0 the channel's parameters would be unidentified
+    under a weighted M-step (any value optimal); unweighted, they remain the
+    descriptive per-state fit given the states the other channels infer.
+    Step 5b's tempered-joint competitor (Cw) sets weight=w on the NB channel."""
     name: str
     family: str          # 'nb' (counts) | 'normal'
     y: np.ndarray        # float array, nan = missing
+    weight: float = 1.0
 
     @property
     def observed(self) -> np.ndarray:
@@ -80,6 +88,11 @@ class FusionFit:
     def expected_durations(self) -> np.ndarray:
         return 1.0 / np.maximum(1.0 - np.diag(self.transmat), 1e-12)
 
+    def warm_start_dict(self) -> dict:
+        """Solution in the form fit_fusion_hmm(warm_start=...) accepts."""
+        return {"params": self.channel_params, "r": self.r,
+                "transmat": self.transmat, "startprob": self.startprob}
+
 
 def _normal_logpdf(x: np.ndarray, m: float, sigma: float) -> np.ndarray:
     return -0.5 * (_LOG_2PI + 2.0 * np.log(sigma) + ((x - m) / sigma) ** 2)
@@ -98,9 +111,10 @@ def _log_emissions(channels: list[Channel], params: dict, r: float | None,
         p = params[ch.name]
         for k in range(n_states):
             if ch.family == "nb":
-                log_b[obs, k] += nb_logpmf(yv, p["mus"][k], r)
+                log_b[obs, k] += ch.weight * nb_logpmf(yv, p["mus"][k], r)
             else:
-                log_b[obs, k] += _normal_logpdf(yv, p["means"][k], p["sigmas"][k])
+                log_b[obs, k] += ch.weight * _normal_logpdf(
+                    yv, p["means"][k], p["sigmas"][k])
     return log_b
 
 
@@ -150,14 +164,41 @@ def _init_params(channels: list[Channel], n_states: int,
     return params, r
 
 
-def _em_once(channels: list[Channel], n_states: int, rng: np.random.Generator,
-             max_iter: int, tol: float):
-    params, r = _init_params(channels, n_states, rng)
-    a = np.full((n_states, n_states), 0.1 / max(n_states - 1, 1))
-    np.fill_diagonal(a, 0.9)
-    a = a * rng.uniform(0.8, 1.2, a.shape)
+def _jitter_init(init: dict, channels: list[Channel], n_states: int,
+                 rng: np.random.Generator, scale: float) -> tuple:
+    """Perturb a warm-start solution (scale=0 -> exact reuse)."""
+    params = {}
+    for ch in channels:
+        p = init["params"][ch.name]
+        if ch.family == "nb":
+            params[ch.name] = {"mus": np.maximum(
+                p["mus"] * rng.uniform(1 - scale, 1 + scale, n_states), 1e-6)}
+        else:
+            params[ch.name] = {
+                "means": p["means"] + rng.normal(0, scale, n_states) * p["sigmas"],
+                "sigmas": p["sigmas"] * rng.uniform(1 - scale, 1 + scale, n_states)}
+    a = init["transmat"] * rng.uniform(1 - scale, 1 + scale,
+                                       (n_states, n_states))
+    a = np.maximum(a, _PROB_FLOOR)
     a /= a.sum(axis=1, keepdims=True)
-    pi = np.full(n_states, 1.0 / n_states)
+    pi = np.maximum(init["startprob"], _PROB_FLOOR)
+    pi /= pi.sum()
+    return params, init["r"], a, pi
+
+
+def _em_once(channels: list[Channel], n_states: int, rng: np.random.Generator,
+             max_iter: int, tol: float, init: tuple | None = None):
+    if init is not None:
+        params, r, a, pi = init
+        params = {k: {kk: np.array(vv, float) for kk, vv in v.items()}
+                  for k, v in params.items()}
+    else:
+        params, r = _init_params(channels, n_states, rng)
+        a = np.full((n_states, n_states), 0.1 / max(n_states - 1, 1))
+        np.fill_diagonal(a, 0.9)
+        a = a * rng.uniform(0.8, 1.2, a.shape)
+        a /= a.sum(axis=1, keepdims=True)
+        pi = np.full(n_states, 1.0 / n_states)
     floors = {ch.name: _variance_floor(ch) for ch in channels
               if ch.family == "normal"}
 
@@ -216,16 +257,28 @@ def _n_params(channels: list[Channel], n_states: int) -> int:
 def fit_fusion_hmm(channels: list[Channel], n_states: int = 2,
                    order_channel: str | None = None, n_restarts: int = 20,
                    max_iter: int = 500, tol: float = 1e-6,
-                   seed: int = 0) -> FusionFit:
-    """Fit the joint HMM by EM with restarts; states ordered, best fit kept."""
+                   seed: int = 0, warm_start: dict | None = None) -> FusionFit:
+    """Fit the joint HMM by EM with restarts; states ordered, best fit kept.
+
+    warm_start (Step 5b expanding-window protocol): dict with keys
+    params/r/transmat/startprob from the previous window's solution. The
+    pre-registered restart plan then becomes 5 runs total — warm exact,
+    2 warm-jittered, 2 random — instead of n_restarts random runs.
+    """
     T = len(channels[0].y)
     assert all(len(c.y) == T for c in channels), "channels must share the grid"
     order_channel = order_channel or channels[0].name
     rng = np.random.default_rng(seed)
 
+    if warm_start is not None:
+        inits = [_jitter_init(warm_start, channels, n_states, rng, s)
+                 for s in (0.0, 0.1, 0.1)] + [None, None]
+    else:
+        inits = [None] * n_restarts
+
     best, best_ll, logliks = None, -np.inf, []
-    for _ in range(n_restarts):
-        out = _em_once(channels, n_states, rng, max_iter, tol)
+    for init in inits:
+        out = _em_once(channels, n_states, rng, max_iter, tol, init=init)
         logliks.append(out[4])
         if out[4] > best_ll:
             best, best_ll = out, out[4]

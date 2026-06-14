@@ -10,7 +10,7 @@ Contents
 main.tex          - the paper (single-column, 11pt, article class)
 references.bib     - BibTeX source for the 7 references
 main.bbl           - pre-compiled bibliography (REQUIRED: arXiv does not run BibTeX)
-figures/*.png      - the 10 figures (PNG, referenced by \includegraphics)
+figures/*.pdf      - the 10 figures (vector PDF, referenced by \includegraphics)
 
 Document class & packages (all standard / arXiv-safe):
   article, inputenc, fontenc, lmodern, geometry, amsmath, amssymb,

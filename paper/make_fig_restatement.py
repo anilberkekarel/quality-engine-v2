@@ -13,9 +13,22 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
+plt.rcParams.update({
+    "font.size": 12,
+    "axes.titlesize": 13,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 11,
+    "ytick.labelsize": 11,
+    "legend.fontsize": 11,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+})
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SB = os.path.join(HERE, "..", "outputs", "scoreboard.csv")
-OUT = os.path.join(HERE, "figures", "fig02_restatement.png")
+# vector PDF for the paper (arXiv-preferred); QVM_FIG_EXT=png to override
+_EXT = os.environ.get("QVM_FIG_EXT", "pdf")
+OUT = os.path.join(HERE, "figures", f"fig02_restatement.{_EXT}")
 
 df = pd.read_csv(SB)
 
@@ -40,20 +53,15 @@ for bars in (b1, b2):
     for r in bars:
         h = r.get_height()
         ax.text(r.get_x() + r.get_width() / 2, h + 0.0015, f"{h:+.3f}",
-                ha="center", va="bottom", fontsize=9)
+                ha="center", va="bottom", fontsize=11)
 ax.axhline(0, color="k", lw=0.8)
 ax.set_xticks(list(x))
-ax.set_xticklabels([labels[c] for c in ("D1", "D2")], fontsize=10)
+ax.set_xticklabels([labels[c] for c in ("D1", "D2")], fontsize=12)
 ax.set_ylabel("Spearman IC (4Q-ahead revenue-growth rank)")
 ax.set_title("Restatements inflate momentum backtests")
-ax.legend(frameon=False, fontsize=9, loc="upper left")
+ax.legend(frameon=False, fontsize=11, loc="upper left")
 ax.set_ylim(0, max(latest) * 1.25)
-fig.text(0.01, -0.02,
-         "Source: outputs/scoreboard.csv (Step-5b pre-registered scoreboard). "
-         "Same momentum signal scored against the as-filed target vs the "
-         "most-recently-restated target; the gap is look-ahead from restatements.",
-         fontsize=7, style="italic", color="#555")
 fig.tight_layout()
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
-fig.savefig(OUT, dpi=150, bbox_inches="tight")
+fig.savefig(OUT, dpi=220, bbox_inches="tight")
 print("wrote", OUT)

@@ -33,14 +33,23 @@ from .. import config
 
 plt.rcParams.update({
     "figure.dpi": 140,
-    "savefig.dpi": 200,
-    "font.size": 10,
+    "savefig.dpi": 220,
+    "font.size": 12,
+    "axes.titlesize": 13,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 11,
+    "ytick.labelsize": 11,
+    "legend.fontsize": 11,
     "axes.grid": True,
     "grid.alpha": 0.25,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "axes.titleweight": "bold",
 })
+
+# Output format for saved figures: "png" (default) or "pdf" (vector, for the
+# paper). Set QVM_FIG_EXT=pdf to emit arXiv-preferred vector figures.
+_FIG_EXT = os.environ.get("QVM_FIG_EXT", "png")
 
 # Stable colors for companies (Fig1) and for date dimensions (Fig2).
 _COMPANY_COLOR = {
@@ -128,10 +137,9 @@ def plot_filing_companies(baseline, out_dir, company_order=None):
         ax.set_title(title)
         ax.set_xlabel("Year")
         ax.set_ylabel(ylab)
-        ax.legend(frameon=False, fontsize=9, title="Company (— complete  -- incomplete)")
-        fig.text(0.01, -0.02, _CAPTION, fontsize=7, style="italic", color="#555")
+        ax.legend(frameon=False, fontsize=11, title="Company (— complete  -- incomplete)")
         fig.tight_layout()
-        path = os.path.join(out_dir, f"fig1_{tag}_filing_companies.png")
+        path = os.path.join(out_dir, f"fig1_{tag}_filing_companies.{_FIG_EXT}")
         _ensure_dir(path)
         fig.savefig(path, bbox_inches="tight")
         plt.close(fig)
@@ -188,12 +196,8 @@ def plot_channels_eyetest(channels, out_dir, company_order=None):
     axes[-1].set_xlabel("Calendar quarter")
     fig.suptitle("Two-sensor eye test — patent rhythm vs financial channel "
                  "(pre-model, raw aligned series)", fontweight="bold", y=0.995)
-    fig.text(0.01, -0.01, _CAPTION + " Financials: SEC EDGAR XBRL, as-filed "
-             "values, calendar-quarter aligned by period end. Shaded: "
-             "incomplete patent tail (18-month publication secrecy).",
-             fontsize=7, style="italic", color="#555")
     fig.tight_layout(rect=(0, 0, 1, 0.985))
-    path = os.path.join(out_dir, "fig3_channels_eyetest.png")
+    path = os.path.join(out_dir, f"fig3_channels_eyetest.{_FIG_EXT}")
     _ensure_dir(path)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
@@ -233,7 +237,7 @@ def plot_regimes(res: dict, out_dir: str) -> str:
     ax.set_ylabel("Filings / quarter")
     ax.set_title(f"{res['label']} ({res['ticker']}) — NB-HMM regimes "
                  f"(shaded: smoothed P(high)$\\geq$0.5)")
-    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.legend(frameon=False, fontsize=11, loc="upper left")
 
     axp.plot(t, fit.filtered[:, 1], color="#d62728", lw=1.5,
              label="Filtered P(high | data up to t) — causal")
@@ -243,13 +247,9 @@ def plot_regimes(res: dict, out_dir: str) -> str:
     axp.set_ylim(-0.04, 1.04)
     axp.set_ylabel("P(high regime)")
     axp.set_xlabel("Quarter")
-    axp.legend(frameon=False, fontsize=8, loc="center left")
+    axp.legend(frameon=False, fontsize=11, loc="center left")
 
-    fig.text(0.01, -0.02, _CAPTION + f" Model: 2-state NB-HMM, {res['note']}. "
-             "Caveat: parameters are full-sample — filtered probs are causal "
-             "in observations only (true OOS = expanding window, Step 5).",
-             fontsize=7, style="italic", color="#555")
-    path = os.path.join(out_dir, f"fig4_regimes_{res['ticker']}.png")
+    path = os.path.join(out_dir, f"fig4_regimes_{res['ticker']}.{_FIG_EXT}")
     _ensure_dir(path)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
@@ -281,25 +281,19 @@ def plot_ablation_filtered(results: list, markers: dict, out_dir: str) -> str:
             tq = pd.Period(q, freq="Q").to_timestamp()
             if t[0] <= tq <= t[-1]:
                 ax.axvline(tq, color="#d62728", lw=1.0, ls="-.", alpha=0.8)
-                ax.text(tq, 1.06, f" {text}", fontsize=7, color="#d62728",
+                ax.text(tq, 1.06, f" {text}", fontsize=9, color="#d62728",
                         ha="left", va="bottom")
         ax.set_ylim(-0.05, 1.18)
         ax.set_yticks([0, 0.5, 1])
         ax.set_ylabel("P(high) filtered")
-        ax.set_title(f"{res['label']} ({res['ticker']})", fontsize=10, loc="left")
+        ax.set_title(f"{res['label']} ({res['ticker']})", fontsize=12, loc="left")
         if ax is axes[0]:
-            ax.legend(frameon=False, fontsize=8, loc="center left", ncol=3)
+            ax.legend(frameon=False, fontsize=10, loc="center left", ncol=3)
     axes[-1].set_xlabel("Quarter")
     fig.suptitle("Ablation — filtered P(high regime): patent-only vs "
                  "financial-only vs joint", fontweight="bold", y=0.995)
-    fig.text(0.01, -0.01, _CAPTION + " Models: 2-state HMMs (NB counts / "
-             "Gaussian financials), full-sample parameters — DESCRIPTIVE; "
-             "real-time version is Step 5. Event markers derived by rule "
-             "(MU: as-filed gross margin -15pp YoY episode starts; NVDA: "
-             "first revenue YoY >= +100%).",
-             fontsize=7, style="italic", color="#555")
     fig.tight_layout(rect=(0, 0, 1, 0.985))
-    path = os.path.join(out_dir, "fig5_ablation_filtered.png")
+    path = os.path.join(out_dir, f"fig5_ablation_filtered.{_FIG_EXT}")
     _ensure_dir(path)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
@@ -329,22 +323,17 @@ def plot_state_profiles(results: list, out_dir: str) -> str:
         for i in range(mat.shape[0]):
             for j in range(2):
                 ax.text(j, i, fmt.format(mat[i, j]), ha="center", va="center",
-                        fontsize=9, fontweight="bold")
-        ax.set_xticks([0, 1], ["low state", "high state"], fontsize=8.5)
-        ax.set_yticks(range(len(tickers)), tickers, fontsize=9)
-        ax.set_title(title, fontsize=10)
+                        fontsize=11, fontweight="bold")
+        ax.set_xticks([0, 1], ["low state", "high state"], fontsize=11)
+        ax.set_yticks(range(len(tickers)), tickers, fontsize=11)
+        ax.set_title(title, fontsize=12)
         ax.grid(False)
         for s in ax.spines.values():
             s.set_visible(False)
     fig.suptitle("Joint-model state profiles — is the 'high' state the same "
                  "thing in every company?", fontweight="bold")
-    fig.text(0.01, -0.04, "States ordered by patent mean (state 1 = high "
-             "patent tempo). Color: within-company scaling, green = the "
-             "larger value. A high-patent state whose financial cells are "
-             "red = patents and financials DISAGREE in that company. "
-             + _CAPTION, fontsize=7, style="italic", color="#555")
     fig.tight_layout(rect=(0, 0, 1, 0.93))
-    path = os.path.join(out_dir, "fig6_state_profiles.png")
+    path = os.path.join(out_dir, f"fig6_state_profiles.{_FIG_EXT}")
     _ensure_dir(path)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
@@ -367,10 +356,9 @@ def plot_three_dates(baseline, out_dir, ticker="NVDA"):
     ax.set_title(f"{label} ({ticker}) — three date series (lag is visible)")
     ax.set_xlabel("Year")
     ax.set_ylabel("Patents per year")
-    ax.legend(frameon=False, fontsize=9, loc="upper left")
-    fig.text(0.01, -0.02, _CAPTION, fontsize=7, style="italic", color="#555")
+    ax.legend(frameon=False, fontsize=11, loc="upper left")
     fig.tight_layout()
-    path = os.path.join(out_dir, f"fig2_three_dates_{ticker}.png")
+    path = os.path.join(out_dir, f"fig2_three_dates_{ticker}.{_FIG_EXT}")
     _ensure_dir(path)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)

@@ -385,6 +385,13 @@ def make_figures(ts, board, headline, wsel):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    plt.rcParams.update({
+        "font.size": 12, "axes.titlesize": 13, "axes.labelsize": 12,
+        "xtick.labelsize": 11, "ytick.labelsize": 11, "legend.fontsize": 11,
+        "axes.spines.top": False, "axes.spines.right": False,
+    })
+    ext = os.environ.get("QVM_FIG_EXT", "png")  # "pdf" -> vector for the paper
+
     key = ["D1", "A_feas", "B", "C", "Cw", "F0", "F0+A+B"]
     fig, ax = plt.subplots(figsize=(11, 5.5))
     for c in key:
@@ -395,13 +402,13 @@ def make_figures(ts, board, headline, wsel):
         ax.plot(x, pd.Series(sub["value"].to_numpy()).rolling(4, 2).mean(),
                 label=c, lw=1.8)
     ax.axhline(0, color="k", lw=0.8)
-    ax.set_title("Fig 7 — quarterly Spearman IC (4Q rolling mean), "
+    ax.set_title("Quarterly Spearman IC (4Q rolling mean), "
                  "target: 4Q-fwd revenue YoY rank")
     ax.set_ylabel("IC")
-    ax.legend(ncol=4, fontsize=9)
+    ax.legend(ncol=4, fontsize=11)
     fig.tight_layout()
-    p7 = os.path.join(config.OUTPUT_DIR, "fig7_ic_timeseries.png")
-    fig.savefig(p7, dpi=150)
+    p7 = os.path.join(config.OUTPUT_DIR, f"fig7_ic_timeseries.{ext}")
+    fig.savefig(p7, dpi=220)
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -412,16 +419,16 @@ def make_figures(ts, board, headline, wsel):
                   + ["#dd8452", "#55a868"])
     for i, (v, tt) in enumerate(zip(vals, tstats)):
         ax.text(i, v + (0.002 if v >= 0 else -0.004),
-                f"{v:+.3f}\n(t={tt:.2f})", ha="center", fontsize=9)
+                f"{v:+.3f}\n(t={tt:.2f})", ha="center", fontsize=11)
     ax.set_xticks(range(len(names)))
-    ax.set_xticklabels(names, rotation=15, fontsize=9)
+    ax.set_xticklabels(names, rotation=15, fontsize=11)
     ax.axhline(0, color="k", lw=0.8)
-    ax.set_title("Fig 8 — headline: marginal IC contributions "
+    ax.set_title("Headline: marginal IC contributions "
                  "(paired per-quarter diffs, NW t)")
     ax.set_ylabel("Δ mean IC (T1, h=4)")
     fig.tight_layout()
-    p8 = os.path.join(config.OUTPUT_DIR, "fig8_headline.png")
-    fig.savefig(p8, dpi=150)
+    p8 = os.path.join(config.OUTPUT_DIR, f"fig8_headline.{ext}")
+    fig.savefig(p8, dpi=220)
     plt.close(fig)
     logger.info("wrote figures -> %s | %s", p7, p8)
 

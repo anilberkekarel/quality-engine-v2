@@ -90,8 +90,8 @@ The reconstruction above is not merely bookkeeping; it surfaces two findings tha
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.82\linewidth]{fig01_lag.png}
-  \caption{\textbf{The filing-to-grant lag is substantial.} NVIDIA's patent activity dated by the three event dates the publications table exposes---filing, publication, and grant (yearly counts). The horizontal displacement between the curves is the lag: a grant-dated signal trails the underlying filing activity by two to three years, and even a filing-dated signal is invisible for roughly the first eighteen months after filing.}
+  \includegraphics[width=0.82\linewidth]{fig01_lag.pdf}
+  \caption{\textbf{The filing-to-grant lag, illustrated for NVIDIA.} NVIDIA's patent activity dated by the three event dates the publications table exposes---filing, publication, and grant (yearly counts). The horizontal displacement between the curves is the lag: a grant-dated signal trails the underlying filing activity by two to three years, and even a filing-dated signal is invisible for roughly the first eighteen months after filing. The cross-firm variation in mean lag ($\approx$28--43 months, CV $\approx$ 0.20) is reported in the text.}
   \label{fig:lag}
 \end{figure}
 
@@ -99,7 +99,7 @@ The reconstruction above is not merely bookkeeping; it surfaces two findings tha
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{fig02_restatement.png}
+  \includegraphics[width=0.7\linewidth]{fig02_restatement.pdf}
   \caption{\textbf{Restatements inflate momentum backtests.} The same momentum baselines scored against the as-filed (point-in-time) target versus the most-recently-restated (latest) target. Each signal's information coefficient roughly doubles on restated data---look-ahead introduced by restatements aligning, in hindsight, with the direction the signal already pointed.}
   \label{fig:restate}
 \end{figure}
@@ -124,28 +124,28 @@ We report regime estimates for four case-study firms chosen to span the relevant
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig03_regime_nvda.png}
+  \includegraphics[width=0.92\linewidth]{fig03_regime_nvda.pdf}
   \caption{\textbf{NVIDIA --- NB-HMM patent-rhythm regimes.} Quarterly filing counts with smoothed high-regime periods shaded (upper panel) and the filtered (causal) versus smoothed high-regime probability (lower panel). NVIDIA enters a high-tempo regime in 2019Q1 and does not leave it through the end of the sample.}
   \label{fig:reg-nvda}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig04_regime_amd.png}
+  \includegraphics[width=0.92\linewidth]{fig04_regime_amd.pdf}
   \caption{\textbf{AMD --- NB-HMM patent-rhythm regimes.} As Figure~\ref{fig:reg-nvda}. AMD's patent separation is weak (a high-to-low mean ratio of only $\sim$1.5), so its regime structure is less sharply defined.}
   \label{fig:reg-amd}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig05_regime_mrvl.png}
+  \includegraphics[width=0.92\linewidth]{fig05_regime_mrvl.pdf}
   \caption{\textbf{Marvell --- NB-HMM patent-rhythm regimes.} As Figure~\ref{fig:reg-nvda}, for a mid-cap networking firm.}
   \label{fig:reg-mrvl}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig06_regime_mu.png}
+  \includegraphics[width=0.92\linewidth]{fig06_regime_mu.pdf}
   \caption{\textbf{Micron --- NB-HMM patent-rhythm regimes.} As Figure~\ref{fig:reg-nvda}, for the memory-cycle control. Micron enters a high-tempo regime in 2017Q3---earlier than NVIDIA---and exits in 2023Q1 as the memory cycle turns; the patent channel cannot foresee the subsequent revenue collapse.}
   \label{fig:reg-mu}
 \end{figure}
@@ -168,7 +168,7 @@ The hypothesis was not supported. In the joint model, Micron exits the high regi
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig07_fusion.png}
+  \includegraphics[width=0.92\linewidth]{fig07_fusion.pdf}
   \caption{\textbf{The pre-registered separation test fails.} Filtered high-regime probability for the patent-only, financial-only, and joint (three-channel) models, with data-derived event markers. The joint model's regime exits are far sharper and more robust at the sample edge, but it does not exit Micron's high regime early as the registered hypothesis required.}
   \label{fig:fusion}
 \end{figure}
@@ -183,7 +183,7 @@ This diagnosis reframes the question. The problem is not whether to fuse but \em
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig08_state_means.png}
+  \includegraphics[width=0.92\linewidth]{fig08_state_means.pdf}
   \caption{\textbf{Joint-model state-conditional channel means.} For each case-study firm, the low- and high-state means of the three channels (patent count, gross margin, revenue growth). Color is scaled within company so the low$\to$high direction is visible: a high-patent state whose financial cells run the other way marks a firm where patents and financials disagree, illustrating that ``high'' does not mean the same thing everywhere.}
   \label{fig:state}
 \end{figure}
@@ -206,7 +206,7 @@ The deliberately simple baselines win, and no hidden-Markov feature beats them. 
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.92\linewidth]{fig09_ic_series.png}
+  \includegraphics[width=0.92\linewidth]{fig09_ic_series.pdf}
   \caption{\textbf{Out-of-sample scoreboard: quarterly information coefficient.} Per-quarter cross-sectional Spearman IC (four-quarter rolling mean) against four-quarter-ahead revenue-growth rank, for the momentum baseline, the regime competitors, and the fundamentals combinations. No hidden-Markov feature consistently beats the simple baselines.}
   \label{fig:ic}
 \end{figure}
@@ -215,7 +215,7 @@ The headline is the marginal contribution of patent-regime features over fundame
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{fig10_marginal.png}
+  \includegraphics[width=0.7\linewidth]{fig10_marginal.pdf}
   \caption{\textbf{Headline: the marginal contribution of regime features is zero.} Change in mean IC (primary horizon) from adding each regime feature to the fundamentals baseline, as paired per-quarter differences with Newey-West $t$-statistics. Adding patent-regime features does not significantly improve on fundamentals.}
   \label{fig:marginal}
 \end{figure}
@@ -258,7 +258,7 @@ We asked whether the rhythm of patent activity anticipates future fundamentals, 
 
 \section{Data and Code Availability}
 
-All data derive from two public sources---Google Patents Public Data (\texttt{patents-\allowbreak public-\allowbreak data.\allowbreak patents.\allowbreak publications}) on BigQuery and the SEC EDGAR XBRL \texttt{companyfacts} API---and all code, queries, the firm registry, the merger-reattribution table, and the pre-registration deviation log are available in the replication repository. The universe definition, assignee-matching rules and exclusions, predecessor-CIK merges, and the QCOM amendment are recorded with timestamps preceding the predictive analysis.
+All data derive from two public sources---Google Patents Public Data (\texttt{patents-\allowbreak public-\allowbreak data.\allowbreak patents.\allowbreak publications}) on BigQuery and the SEC EDGAR XBRL \texttt{companyfacts} API---and all code, queries, the firm registry, the merger-reattribution table, and the pre-registration deviation log are available in the replication repository [Repository: \url{https://github.com/anilberkekarel/quality-engine-v2} --- to be made public upon submission]. The universe definition, assignee-matching rules and exclusions, predecessor-CIK merges, and the QCOM amendment are recorded with timestamps preceding the predictive analysis.
 
 \section{Deviation Log}
 

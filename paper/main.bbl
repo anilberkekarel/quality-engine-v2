@@ -1,0 +1,50 @@
+\begin{thebibliography}{7}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Baron et~al.(2016)Baron, Pohlmann, and Blind]{baron2016}
+Justus Baron, Tim Pohlmann, and Knut Blind.
+\newblock Essential patents and standard dynamics.
+\newblock \emph{Research Policy}, 45\penalty0 (9):\penalty0 1762--1773, 2016.
+\newblock \doi{10.1016/j.respol.2016.05.004}.
+
+\bibitem[Bergeaud et~al.(2022)Bergeaud, Schmidt, and Zago]{bergeaud2022}
+Antonin Bergeaud, Julia Schmidt, and Riccardo Zago.
+\newblock Patents that match your standards: Firm-level evidence on competition and innovation.
+\newblock CEPR Discussion Paper 17486, Centre for Economic Policy Research, 2022.
+\newblock Also CEP Discussion Paper dp1881, Centre for Economic Performance, LSE.
+
+\bibitem[Cao and You(2024)]{cao2024}
+Kai Cao and Haifeng You.
+\newblock Fundamental analysis via machine learning.
+\newblock \emph{Financial Analysts Journal}, 80\penalty0 (2):\penalty0 74--98, 2024.
+\newblock \doi{10.1080/0015198X.2024.2313692}.
+
+\bibitem[Chen et~al.(2022)Chen, Cho, Dou, and Lev]{chen2022}
+Xinyue Chen, Yong~Hyun Cho, Yiwei Dou, and Baruch Lev.
+\newblock Predicting future earnings changes using machine learning and detailed financial data.
+\newblock \emph{Journal of Accounting Research}, 60\penalty0 (2):\penalty0 467--515, 2022.
+\newblock \doi{10.1111/1475-679X.12429}.
+
+\bibitem[Hamilton(1989)]{hamilton1989}
+James~D. Hamilton.
+\newblock A new approach to the economic analysis of nonstationary time series and the business cycle.
+\newblock \emph{Econometrica}, 57\penalty0 (2):\penalty0 357--384, 1989.
+\newblock \doi{10.2307/1912559}.
+
+\bibitem[Hussinger and Schwiebacher(2015)]{hussinger2015}
+Katrin Hussinger and Franz Schwiebacher.
+\newblock The market value of technology disclosures to standard setting organizations.
+\newblock \emph{Industry and Innovation}, 22\penalty0 (4):\penalty0 321--344, 2015.
+\newblock \doi{10.1080/13662716.2015.1049865}.
+
+\bibitem[Kogan et~al.(2017)Kogan, Papanikolaou, Seru, and Stoffman]{kogan2017}
+Leonid Kogan, Dimitris Papanikolaou, Amit Seru, and Noah Stoffman.
+\newblock Technological innovation, resource allocation, and growth.
+\newblock \emph{The Quarterly Journal of Economics}, 132\penalty0 (2):\penalty0 665--712, 2017.
+\newblock \doi{10.1093/qje/qjw040}.
+
+\end{thebibliography}

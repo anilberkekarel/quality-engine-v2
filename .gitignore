@@ -43,5 +43,18 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# --- LaTeX build artifacts (paper/) ---
+paper/*.aux
+paper/*.log
+paper/*.blg
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+# regenerable bundle (duplicates the loose files we commit) + duplicate PDF
+paper/arxiv_submission.tar.gz
+paper/whitepaper_v2.pdf
+
 # NOTE: outputs/ (figures + summary CSVs) ARE committed — they are the
 # whitepaper artifacts. Only _cache/ (raw pulled data) is ignored.
